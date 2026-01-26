@@ -1,0 +1,17 @@
+# ---- secrets / env ----
+infra/.env
+*.env
+
+# ---- Java / Maven ----
+**/target/
+**/.classpath
+**/.project
+**/.settings/
+**/.idea/
+**/*.iml
+
+# ---- VS Code ----
+.vscode/
+
+# ---- Logs ----
+*.log
