@@ -2,6 +2,7 @@ package dev.masterhesse.diglearn.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -17,6 +18,7 @@ public class SecurityConfig {
             .requestMatchers("/actuator/health").permitAll()
             .requestMatchers("/swagger-ui/**").permitAll()
             .requestMatchers("/v3/api-docs/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/kp/**").permitAll()
             .anyRequest().authenticated()
         )
         .httpBasic(Customizer.withDefaults())

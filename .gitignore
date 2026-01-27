@@ -9,9 +9,12 @@ infra/.env
 **/.settings/
 **/.idea/
 **/*.iml
+./backend/bin/
 
 # ---- VS Code ----
 .vscode/
 
 # ---- Logs ----
 *.log
+
+.gitignore
