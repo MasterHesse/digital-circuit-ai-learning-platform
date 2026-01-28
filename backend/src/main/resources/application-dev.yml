@@ -19,3 +19,14 @@ spring:
         authentication:
             username: neo4j
             password: neo4j_pwd
+    datasource:
+        url: jdbc:postgresql://localhost:5433/diglearn
+        username: postgres
+        password: 123456
+    jpa:
+        hibernate:
+            ddl-auto: update
+        properties:
+            hibernate:
+                format_sql: true
+        open-in-view: false
