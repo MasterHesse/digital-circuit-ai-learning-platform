@@ -1,0 +1,31 @@
+{
+  "code": "L07_MUX2",
+  "title": "2:1 MUX（用门电路实现）",
+  "description": "实现 2:1 多路选择器：当 S=0 时 Y=D0；当 S=1 时 Y=D1。",
+  "allowedComponents": ["And", "Or", "Not", "Button", "Lamp", "Repeater"],
+  "devices": {
+    "D0": { "type": "Button", "label": "D0", "x": 40, "y": 40 },
+    "D1": { "type": "Button", "label": "D1", "x": 40, "y": 120 },
+    "S": { "type": "Button", "label": "S", "x": 40, "y": 200 },
+    "Y": { "type": "Lamp", "label": "Y", "x": 620, "y": 120 }
+  },
+  "kpIds": ["DC-COMB-02"],
+  "templateCircuit": null,
+  "testCases": [
+    {
+      "name": "truth-table",
+      "orderIndex": 1,
+      "steps": [
+        { "stepIndex": 0, "inputs": { "D0": 0, "D1": 0, "S": 0 }, "expected": { "Y": 0 } },
+        { "stepIndex": 1, "inputs": { "D0": 1, "D1": 0, "S": 0 }, "expected": { "Y": 1 } },
+        { "stepIndex": 2, "inputs": { "D0": 0, "D1": 1, "S": 0 }, "expected": { "Y": 0 } },
+        { "stepIndex": 3, "inputs": { "D0": 1, "D1": 1, "S": 0 }, "expected": { "Y": 1 } },
+
+        { "stepIndex": 4, "inputs": { "D0": 0, "D1": 0, "S": 1 }, "expected": { "Y": 0 } },
+        { "stepIndex": 5, "inputs": { "D0": 1, "D1": 0, "S": 1 }, "expected": { "Y": 0 } },
+        { "stepIndex": 6, "inputs": { "D0": 0, "D1": 1, "S": 1 }, "expected": { "Y": 1 } },
+        { "stepIndex": 7, "inputs": { "D0": 1, "D1": 1, "S": 1 }, "expected": { "Y": 1 } }
+      ]
+    }
+  ]
+}

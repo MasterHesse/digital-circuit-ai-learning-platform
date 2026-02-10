@@ -1,0 +1,42 @@
+{
+  "code": "L21_FSM_EDGE_DETECT",
+  "title": "FSM 案例：同步上升沿检测（0→1）",
+  "description": "用 DFF 构造状态机：Prev 记录上一拍 X；输出寄存器 Z 满足 Z_next = (NOT Prev) AND X。RST 清零。观察 Z 在检测到 0→1 时输出一个周期的 1。",
+  "allowedComponents": ["Dff", "And", "Not", "Button", "Lamp", "Repeater"],
+  "devices": {
+    "X": { "type": "Button", "label": "X", "x": 40, "y": 40 },
+    "CLK": { "type": "Button", "label": "CLK", "x": 40, "y": 120 },
+    "RST": { "type": "Button", "label": "RST", "x": 40, "y": 200 },
+
+    "Prev": { "type": "Dff", "label": "Prev", "x": 300, "y": 90, "bits": 1, "polarity.clock": true, "polarity.arst": true, "arst_value": "0", "initial": "0" },
+    "ZFF": { "type": "Dff", "label": "ZFF", "x": 420, "y": 90, "bits": 1, "polarity.clock": true, "polarity.arst": true, "arst_value": "0", "initial": "0" },
+
+    "Z": { "type": "Lamp", "label": "Z", "x": 620, "y": 120 }
+  },
+  "kpIds": ["DC-FSM-01"],
+  "templateCircuit": null,
+  "testCases": [
+    {
+      "name": "edge-detect-seq",
+      "orderIndex": 1,
+      "steps": [
+        { "stepIndex": 0, "inputs": { "RST": 1, "CLK": 0, "X": 0 }, "expected": { "Z": 0 } },
+        { "stepIndex": 1, "inputs": { "RST": 0, "CLK": 0, "X": 0 }, "expected": { "Z": 0 } },
+
+        { "stepIndex": 2, "inputs": { "RST": 0, "CLK": 1, "X": 0 }, "expected": { "Z": 0 } },
+        { "stepIndex": 3, "inputs": { "RST": 0, "CLK": 0, "X": 1 }, "expected": { "Z": 0 } },
+
+        { "stepIndex": 4, "inputs": { "RST": 0, "CLK": 1, "X": 1 }, "expected": { "Z": 1 } },
+        { "stepIndex": 5, "inputs": { "RST": 0, "CLK": 0, "X": 1 }, "expected": { "Z": 1 } },
+
+        { "stepIndex": 6, "inputs": { "RST": 0, "CLK": 1, "X": 1 }, "expected": { "Z": 0 } },
+        { "stepIndex": 7, "inputs": { "RST": 0, "CLK": 0, "X": 0 }, "expected": { "Z": 0 } },
+
+        { "stepIndex": 8, "inputs": { "RST": 0, "CLK": 1, "X": 0 }, "expected": { "Z": 0 } },
+        { "stepIndex": 9, "inputs": { "RST": 0, "CLK": 0, "X": 1 }, "expected": { "Z": 0 } },
+
+        { "stepIndex": 10, "inputs": { "RST": 0, "CLK": 1, "X": 1 }, "expected": { "Z": 1 } }
+      ]
+    }
+  ]
+}

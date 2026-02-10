@@ -1,5 +1,14 @@
 server:
   port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: always
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
 
 management:
   endpoints:
@@ -29,4 +38,4 @@ spring:
         properties:
             hibernate:
                 format_sql: true
-        open-in-view: false            
+        open-in-view: false

@@ -1,0 +1,32 @@
+{
+  "code": "L09_ENCODER_4x2",
+  "title": "4→2 编码器（one-hot 输入）",
+  "description": "实现编码器：I0/I1/I2/I3 为独热输入；输出 (O1,O0) 为二进制编码，V 表示是否有任意输入为 1。约定：I0->00, I1->01, I2->10, I3->11；全 0 时 V=0 且 O1O0=00。",
+  "allowedComponents": ["And", "Or", "Not", "Button", "Lamp", "Repeater"],
+  "devices": {
+    "I0": { "type": "Button", "label": "I0", "x": 40, "y": 20 },
+    "I1": { "type": "Button", "label": "I1", "x": 40, "y": 90 },
+    "I2": { "type": "Button", "label": "I2", "x": 40, "y": 160 },
+    "I3": { "type": "Button", "label": "I3", "x": 40, "y": 230 },
+
+    "O1": { "type": "Lamp", "label": "O1", "x": 620, "y": 70 },
+    "O0": { "type": "Lamp", "label": "O0", "x": 620, "y": 130 },
+    "V": { "type": "Lamp", "label": "V", "x": 620, "y": 190 }
+  },
+  "kpIds": ["DC-COMB-04"],
+  "templateCircuit": null,
+  "testCases": [
+    {
+      "name": "one-hot-cases",
+      "orderIndex": 1,
+      "steps": [
+        { "stepIndex": 0, "inputs": { "I0": 0, "I1": 0, "I2": 0, "I3": 0 }, "expected": { "O1": 0, "O0": 0, "V": 0 } },
+
+        { "stepIndex": 1, "inputs": { "I0": 1, "I1": 0, "I2": 0, "I3": 0 }, "expected": { "O1": 0, "O0": 0, "V": 1 } },
+        { "stepIndex": 2, "inputs": { "I0": 0, "I1": 1, "I2": 0, "I3": 0 }, "expected": { "O1": 0, "O0": 1, "V": 1 } },
+        { "stepIndex": 3, "inputs": { "I0": 0, "I1": 0, "I2": 1, "I3": 0 }, "expected": { "O1": 1, "O0": 0, "V": 1 } },
+        { "stepIndex": 4, "inputs": { "I0": 0, "I1": 0, "I2": 0, "I3": 1 }, "expected": { "O1": 1, "O0": 1, "V": 1 } }
+      ]
+    }
+  ]
+}

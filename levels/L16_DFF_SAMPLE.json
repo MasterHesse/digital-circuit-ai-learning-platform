@@ -1,0 +1,33 @@
+{
+  "code": "L16_DFF_SAMPLE",
+  "title": "D 触发器采样（带异步复位）",
+  "description": "连接预置 Dff：RST=1 时 Q 复位为 0；在 CLK 上升沿采样 D 到 Q；其余时间保持。",
+  "allowedComponents": ["Dff", "Button", "Lamp", "Repeater"],
+  "devices": {
+    "D": { "type": "Button", "label": "D", "x": 40, "y": 40 },
+    "CLK": { "type": "Button", "label": "CLK", "x": 40, "y": 120 },
+    "RST": { "type": "Button", "label": "RST", "x": 40, "y": 200 },
+
+    "FF": { "type": "Dff", "label": "DFF", "x": 320, "y": 110, "bits": 1, "polarity.clock": true, "polarity.arst": true, "arst_value": "0", "initial": "0" },
+
+    "Q": { "type": "Lamp", "label": "Q", "x": 620, "y": 120 }
+  },
+  "kpIds": ["DC-SEQ-01", "DC-SEQ-03"],
+  "templateCircuit": null,
+  "testCases": [
+    {
+      "name": "reset-and-sample",
+      "orderIndex": 1,
+      "steps": [
+        { "stepIndex": 0, "inputs": { "RST": 1, "CLK": 0, "D": 0 }, "expected": { "Q": 0 } },
+        { "stepIndex": 1, "inputs": { "RST": 0, "CLK": 0, "D": 0 }, "expected": { "Q": 0 } },
+        { "stepIndex": 2, "inputs": { "RST": 0, "CLK": 0, "D": 1 }, "expected": { "Q": 0 } },
+        { "stepIndex": 3, "inputs": { "RST": 0, "CLK": 1, "D": 1 }, "expected": { "Q": 1 } },
+        { "stepIndex": 4, "inputs": { "RST": 0, "CLK": 0, "D": 1 }, "expected": { "Q": 1 } },
+        { "stepIndex": 5, "inputs": { "RST": 0, "CLK": 0, "D": 0 }, "expected": { "Q": 1 } },
+        { "stepIndex": 6, "inputs": { "RST": 0, "CLK": 1, "D": 0 }, "expected": { "Q": 0 } },
+        { "stepIndex": 7, "inputs": { "RST": 1, "CLK": 0, "D": 1 }, "expected": { "Q": 0 } }
+      ]
+    }
+  ]
+}

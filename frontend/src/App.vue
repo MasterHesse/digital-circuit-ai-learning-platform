@@ -1,10 +1,9 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import CircuitMiniEditor from './components/CircuitMiniEditor.vue'
+import OnlineVerilogEditor from './components/OnlineVerilogEditor.vue';
 </script>
 
 <template>
-  <CircuitMiniEditor />
+  <OnlineVerilogEditor />
 </template>
 
 

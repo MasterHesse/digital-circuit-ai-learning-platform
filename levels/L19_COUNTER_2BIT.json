@@ -1,0 +1,39 @@
+{
+  "code": "L19_COUNTER_2BIT",
+  "title": "2-bit 同步计数器（Mod-4）",
+  "description": "实现同步二进制计数器：RST 清零；每次 CLK 上升沿：Q 从 00->01->10->11->00 循环。提示：Q0_next=NOT Q0；Q1_next=Q1 XOR Q0。",
+  "allowedComponents": ["Dff", "Not", "Xor", "And", "Or", "Button", "Lamp", "Repeater"],
+  "devices": {
+    "CLK": { "type": "Button", "label": "CLK", "x": 40, "y": 80 },
+    "RST": { "type": "Button", "label": "RST", "x": 40, "y": 160 },
+
+    "FF0": { "type": "Dff", "label": "FF0(Q0)", "x": 300, "y": 70, "bits": 1, "polarity.clock": true, "polarity.arst": true, "arst_value": "0", "initial": "0" },
+    "FF1": { "type": "Dff", "label": "FF1(Q1)", "x": 400, "y": 70, "bits": 1, "polarity.clock": true, "polarity.arst": true, "arst_value": "0", "initial": "0" },
+
+    "Q0": { "type": "Lamp", "label": "Q0", "x": 620, "y": 90 },
+    "Q1": { "type": "Lamp", "label": "Q1", "x": 620, "y": 170 }
+  },
+  "kpIds": ["DC-SEQ-06"],
+  "templateCircuit": null,
+  "testCases": [
+    {
+      "name": "count-0-to-3",
+      "orderIndex": 1,
+      "steps": [
+        { "stepIndex": 0, "inputs": { "RST": 1, "CLK": 0 }, "expected": { "Q1": 0, "Q0": 0 } },
+        { "stepIndex": 1, "inputs": { "RST": 0, "CLK": 0 }, "expected": { "Q1": 0, "Q0": 0 } },
+
+        { "stepIndex": 2, "inputs": { "RST": 0, "CLK": 1 }, "expected": { "Q1": 0, "Q0": 1 } },
+        { "stepIndex": 3, "inputs": { "RST": 0, "CLK": 0 }, "expected": { "Q1": 0, "Q0": 1 } },
+
+        { "stepIndex": 4, "inputs": { "RST": 0, "CLK": 1 }, "expected": { "Q1": 1, "Q0": 0 } },
+        { "stepIndex": 5, "inputs": { "RST": 0, "CLK": 0 }, "expected": { "Q1": 1, "Q0": 0 } },
+
+        { "stepIndex": 6, "inputs": { "RST": 0, "CLK": 1 }, "expected": { "Q1": 1, "Q0": 1 } },
+        { "stepIndex": 7, "inputs": { "RST": 0, "CLK": 0 }, "expected": { "Q1": 1, "Q0": 1 } },
+
+        { "stepIndex": 8, "inputs": { "RST": 0, "CLK": 1 }, "expected": { "Q1": 0, "Q0": 0 } }
+      ]
+    }
+  ]
+}

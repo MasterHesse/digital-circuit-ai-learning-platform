@@ -1,0 +1,37 @@
+{
+  "code": "L18_SHIFTREG_2BIT",
+  "title": "2-bit 移位寄存器（串入串移）",
+  "description": "实现 2-bit shift register：每个 CLK 上升沿：Q0<-Din，Q1<-Q0(旧)。RST 复位清零。",
+  "allowedComponents": ["Dff", "Button", "Lamp", "Repeater"],
+  "devices": {
+    "Din": { "type": "Button", "label": "Din", "x": 40, "y": 40 },
+    "CLK": { "type": "Button", "label": "CLK", "x": 40, "y": 120 },
+    "RST": { "type": "Button", "label": "RST", "x": 40, "y": 200 },
+
+    "FF0": { "type": "Dff", "label": "FF0", "x": 280, "y": 70, "bits": 1, "polarity.clock": true, "polarity.arst": true, "arst_value": "0", "initial": "0" },
+    "FF1": { "type": "Dff", "label": "FF1", "x": 380, "y": 70, "bits": 1, "polarity.clock": true, "polarity.arst": true, "arst_value": "0", "initial": "0" },
+
+    "Q0": { "type": "Lamp", "label": "Q0", "x": 620, "y": 90 },
+    "Q1": { "type": "Lamp", "label": "Q1", "x": 620, "y": 170 }
+  },
+  "kpIds": ["DC-SEQ-05"],
+  "templateCircuit": null,
+  "testCases": [
+    {
+      "name": "shift-sequence",
+      "orderIndex": 1,
+      "steps": [
+        { "stepIndex": 0, "inputs": { "RST": 1, "CLK": 0, "Din": 0 }, "expected": { "Q0": 0, "Q1": 0 } },
+        { "stepIndex": 1, "inputs": { "RST": 0, "CLK": 0, "Din": 1 }, "expected": { "Q0": 0, "Q1": 0 } },
+
+        { "stepIndex": 2, "inputs": { "RST": 0, "CLK": 1, "Din": 1 }, "expected": { "Q0": 1, "Q1": 0 } },
+        { "stepIndex": 3, "inputs": { "RST": 0, "CLK": 0, "Din": 0 }, "expected": { "Q0": 1, "Q1": 0 } },
+
+        { "stepIndex": 4, "inputs": { "RST": 0, "CLK": 1, "Din": 0 }, "expected": { "Q0": 0, "Q1": 1 } },
+        { "stepIndex": 5, "inputs": { "RST": 0, "CLK": 0, "Din": 1 }, "expected": { "Q0": 0, "Q1": 1 } },
+
+        { "stepIndex": 6, "inputs": { "RST": 0, "CLK": 1, "Din": 1 }, "expected": { "Q0": 1, "Q1": 0 } }
+      ]
+    }
+  ]
+}
