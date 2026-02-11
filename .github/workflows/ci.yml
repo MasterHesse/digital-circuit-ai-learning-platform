@@ -10,13 +10,69 @@ jobs:
     defaults:
       run:
         working-directory: backend
+
+    env:
+      # 与你 .env 一致（也可改成 GitHub Secrets）
+      POSTGRES_DB: diglearn
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      NEO4J_AUTH: neo4j/neo4j_pwd
+
+      # 显式喂给 Spring（关键）
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5433/diglearn
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+
+      SPRING_NEO4J_URI: bolt://localhost:7687
+      SPRING_NEO4J_AUTHENTICATION_USERNAME: neo4j
+      SPRING_NEO4J_AUTHENTICATION_PASSWORD: neo4j_pwd
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
-      - name: Test
-        run: ./mvnw -q test
+
+      - name: Start dependencies (Postgres + Neo4j)
+        run: |
+          docker compose -f ../infra/docker-compose.yml up -d postgres neo4j
+          docker compose -f ../infra/docker-compose.yml ps
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..40}; do
+            docker compose -f ../infra/docker-compose.yml exec -T postgres \
+              pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" && exit 0
+            sleep 2
+          done
+          docker compose -f ../infra/docker-compose.yml logs postgres
+          exit 1
+
+      - name: Wait for Neo4j (HTTP)
+        run: |
+          for i in {1..40}; do
+            curl -fsS http://localhost:7474 >/dev/null && exit 0
+            sleep 2
+          done
+          docker compose -f ../infra/docker-compose.yml logs neo4j
+          exit 1
+
+      - name: Test (show errors)
+        run: ./mvnw -e test
+
       - name: Package
         run: ./mvnw -q -DskipTests package
+
+      - name: Upload surefire reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: backend/target/surefire-reports
+
+      - name: Stop dependencies
+        if: always()
+        run: |
+          docker compose -f ../infra/docker-compose.yml down -v
