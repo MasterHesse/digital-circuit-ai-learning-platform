@@ -93,10 +93,10 @@
         <div class="title">SystemVerilog</div>
         <div ref="cmEl" class="code" spellcheck="false"></div>
 
-        <details class="details">
+        <!-- <details class="details">
           <summary>Advanced: read-only DigitalJS JSON (compiled)</summary>
           <pre class="pre preTall">{{ circuitJsonText }}</pre>
-        </details>
+        </details> -->
       </section>
 
       <section class="preview">
@@ -939,6 +939,8 @@ onBeforeUnmount(() => {
   font-family: ui-sans-serif, system-ui, -apple-system;
   background: var(--bg);
   color: var(--text);
+
+  width: 100%;
 }
 
 .bar {
@@ -1093,10 +1095,9 @@ code {
 .editor,
 .preview {
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
   display: flex;
   flex-direction: column;
-  overflow: auto;
   }
 
 .title { font-weight: 700; margin-bottom: 8px; }

@@ -22,7 +22,6 @@ public class SecurityConfig {
             .requestMatchers("/api/levels/**").permitAll()
             .requestMatchers("/api/circuits").permitAll()
             .requestMatchers("/api/circuits/**").permitAll()
-            .requestMatchers("/api/sim/**").permitAll()
             .requestMatchers("/api/users/**").permitAll()
             .anyRequest().authenticated()
         )
