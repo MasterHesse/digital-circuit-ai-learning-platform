@@ -3,6 +3,7 @@
   "title": "2→4 译码器（含使能 EN）",
   "description": "实现 2→4 Decoder：当 EN=1 时，(A,B)=00/01/10/11 分别令 Y0/Y1/Y2/Y3 为 1（独热）；当 EN=0 时全为 0。",
   "allowedComponents": ["And", "Or", "Not", "Button", "Lamp", "Repeater"],
+  "allowCycles": false,
   "devices": {
     "A": { "type": "Button", "label": "A", "x": 40, "y": 60 },
     "B": { "type": "Button", "label": "B", "x": 40, "y": 140 },

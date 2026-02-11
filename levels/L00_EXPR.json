@@ -3,6 +3,7 @@
   "title": "表达式实现（真值表入门）",
   "description": "用逻辑门实现：Y = (A AND (NOT B)) OR C",
   "allowedComponents": ["And", "Or", "Not", "Button", "Lamp"],
+  "allowCycles": false,
   "devices": {
     "A": { "type": "Button", "label": "A", "x": 40, "y": 40 },
     "B": { "type": "Button", "label": "B", "x": 40, "y": 120 },

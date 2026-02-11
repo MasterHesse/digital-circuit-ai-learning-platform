@@ -3,6 +3,7 @@
   "title": "FSM 案例：同步上升沿检测（0→1）",
   "description": "用 DFF 构造状态机：Prev 记录上一拍 X；输出寄存器 Z 满足 Z_next = (NOT Prev) AND X。RST 清零。观察 Z 在检测到 0→1 时输出一个周期的 1。",
   "allowedComponents": ["Dff", "And", "Not", "Button", "Lamp", "Repeater"],
+  "allowCycles": true,
   "devices": {
     "X": { "type": "Button", "label": "X", "x": 40, "y": 40 },
     "CLK": { "type": "Button", "label": "CLK", "x": 40, "y": 120 },

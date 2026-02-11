@@ -2,6 +2,7 @@
   "code": "L04_SOP_MINTERMS",
   "title": "SOP 规范形式（最小项）",
   "description": "实现三变量函数：F(A,B,C) = Σm(1,2,5,7)。请用 And/Or/Not 实现输出 Y。",
+  "allowCycles": false,
   "allowedComponents": ["And", "Or", "Not", "Button", "Lamp", "Repeater"],
   "devices": {
     "A": { "type": "Button", "label": "A", "x": 40, "y": 40 },

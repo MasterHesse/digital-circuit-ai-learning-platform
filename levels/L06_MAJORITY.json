@@ -3,6 +3,7 @@
   "title": "组合逻辑设计：三输入多数表决",
   "description": "实现多数表决：当 A,B,C 中至少两个为 1 时，Y=1，否则 Y=0。",
   "allowedComponents": ["And", "Or", "Not", "Button", "Lamp", "Repeater"],
+  "allowCycles": false,
   "devices": {
     "A": { "type": "Button", "label": "A", "x": 40, "y": 40 },
     "B": { "type": "Button", "label": "B", "x": 40, "y": 120 },

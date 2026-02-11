@@ -3,6 +3,7 @@
   "title": "T 触发器（用 DFF 实现）",
   "description": "实现 TFF：RST 复位 Q=0；在 CLK 上升沿：若 T=0 则 Q 保持；若 T=1 则 Q 翻转。提示：可用 D = T XOR Q。",
   "allowedComponents": ["Dff", "Xor", "And", "Or", "Not", "Button", "Lamp", "Repeater"],
+  "allowCycles": true,
   "devices": {
     "T": { "type": "Button", "label": "T", "x": 40, "y": 40 },
     "CLK": { "type": "Button", "label": "CLK", "x": 40, "y": 120 },

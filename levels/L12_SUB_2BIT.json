@@ -3,6 +3,7 @@
   "title": "2-bit 减法器（A - B）",
   "description": "实现 2-bit 无符号减法：A1A0 - B1B0 => D1D0 与 Borrow（当 A<B 时 Borrow=1）。",
   "allowedComponents": ["And", "Or", "Not", "Xor", "Button", "Lamp", "Repeater"],
+  "allowCycles": false,
   "devices": {
     "A1": { "type": "Button", "label": "A1", "x": 40, "y": 20 },
     "A0": { "type": "Button", "label": "A0", "x": 40, "y": 80 },

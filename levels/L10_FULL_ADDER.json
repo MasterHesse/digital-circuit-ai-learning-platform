@@ -3,6 +3,7 @@
   "title": "全加器（Full Adder）",
   "description": "实现 1-bit 全加器：输入 A,B,Cin；输出 Sum,Cout。",
   "allowedComponents": ["And", "Or", "Not", "Xor", "Button", "Lamp", "Repeater"],
+  "allowCycles": false,
   "devices": {
     "A": { "type": "Button", "label": "A", "x": 40, "y": 40 },
     "B": { "type": "Button", "label": "B", "x": 40, "y": 120 },

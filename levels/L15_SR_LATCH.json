@@ -3,6 +3,7 @@
   "title": "SR 锁存器（用 NOR 交叉反馈）",
   "description": "用两个 Nor 门交叉反馈实现 SR 锁存器（S/R 高有效）：S=1置位，R=1复位，S=R=0保持。请输出 Q 与 Qn。",
   "allowedComponents": ["Or", "Not", "Button", "Lamp"],
+  "allowCycles": true,
   "devices": {
     "S": { "type": "Button", "label": "S", "x": 40, "y": 80 },
     "R": { "type": "Button", "label": "R", "x": 40, "y": 160 },

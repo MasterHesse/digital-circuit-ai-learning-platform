@@ -3,6 +3,7 @@
   "title": "布尔代数化简（输出等于 A）",
   "description": "目标函数：Y = (A AND B) OR (A AND (NOT B))。提示：可用布尔代数化简。",
   "allowedComponents": ["And", "Or", "Not", "Button", "Lamp"],
+  "allowCycles": false,
   "devices": {
     "A": { "type": "Button", "label": "A", "x": 40, "y": 40 },
     "B": { "type": "Button", "label": "B", "x": 40, "y": 120 },

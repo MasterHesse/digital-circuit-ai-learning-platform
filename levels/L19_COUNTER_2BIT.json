@@ -3,6 +3,7 @@
   "title": "2-bit 同步计数器（Mod-4）",
   "description": "实现同步二进制计数器：RST 清零；每次 CLK 上升沿：Q 从 00->01->10->11->00 循环。提示：Q0_next=NOT Q0；Q1_next=Q1 XOR Q0。",
   "allowedComponents": ["Dff", "Not", "Xor", "And", "Or", "Button", "Lamp", "Repeater"],
+  "allowCycles": true,
   "devices": {
     "CLK": { "type": "Button", "label": "CLK", "x": 40, "y": 80 },
     "RST": { "type": "Button", "label": "RST", "x": 40, "y": 160 },

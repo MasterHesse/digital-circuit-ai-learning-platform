@@ -3,6 +3,7 @@
   "title": "2-bit 移位寄存器（串入串移）",
   "description": "实现 2-bit shift register：每个 CLK 上升沿：Q0<-Din，Q1<-Q0(旧)。RST 复位清零。",
   "allowedComponents": ["Dff", "Button", "Lamp", "Repeater"],
+  "allowCycles": true,
   "devices": {
     "Din": { "type": "Button", "label": "Din", "x": 40, "y": 40 },
     "CLK": { "type": "Button", "label": "CLK", "x": 40, "y": 120 },

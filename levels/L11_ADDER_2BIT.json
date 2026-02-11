@@ -3,6 +3,7 @@
   "title": "2-bit 串行进位加法器（Ripple Carry）",
   "description": "实现 2-bit 加法：A1A0 + B1B0 => Cout S1 S0（无 Cin）。",
   "allowedComponents": ["And", "Or", "Not", "Xor", "Button", "Lamp", "Repeater"],
+  "allowCycles": false,
   "devices": {
     "A1": { "type": "Button", "label": "A1", "x": 40, "y": 20 },
     "A0": { "type": "Button", "label": "A0", "x": 40, "y": 80 },

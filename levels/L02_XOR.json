@@ -3,6 +3,7 @@
   "title": "XOR 实现（不用 Xor 元件）",
   "description": "仅用 And/Or/Not 搭建异或：Y = A XOR B",
   "allowedComponents": ["And", "Or", "Not", "Button", "Lamp", "Nand"],
+  "allowCycles": false,
   "devices": {
     "A": { "type": "Button", "label": "A", "x": 40, "y": 40 },
     "B": { "type": "Button", "label": "B", "x": 40, "y": 120 },

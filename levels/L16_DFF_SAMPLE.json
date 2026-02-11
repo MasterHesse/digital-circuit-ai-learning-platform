@@ -3,6 +3,7 @@
   "title": "D 触发器采样（带异步复位）",
   "description": "连接预置 Dff：RST=1 时 Q 复位为 0；在 CLK 上升沿采样 D 到 Q；其余时间保持。",
   "allowedComponents": ["Dff", "Button", "Lamp", "Repeater"],
+  "allowCycles": true,
   "devices": {
     "D": { "type": "Button", "label": "D", "x": 40, "y": 40 },
     "CLK": { "type": "Button", "label": "CLK", "x": 40, "y": 120 },

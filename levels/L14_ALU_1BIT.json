@@ -3,6 +3,7 @@
   "title": "1-bit ALU（AND/OR/XOR/ADD）",
   "description": "实现 1-bit ALU：Op1Op0=00->AND，01->OR，10->XOR，11->ADD(输出 Sum 与 Cout)。非 ADD 时 Cout=0。",
   "allowedComponents": ["And", "Or", "Not", "Xor", "Button", "Lamp", "Repeater"],
+  "allowCycles": false,
   "devices": {
     "A": { "type": "Button", "label": "A", "x": 40, "y": 40 },
     "B": { "type": "Button", "label": "B", "x": 40, "y": 120 },

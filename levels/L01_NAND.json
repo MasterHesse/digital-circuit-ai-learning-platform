@@ -3,6 +3,7 @@
   "title": "NAND 实现",
   "description": "用 And+Not 搭建 NAND：Y = NOT(A AND B)",
   "allowedComponents": ["And", "Not", "Button", "Lamp"],
+  "allowCycles": false,
   "devices": {
   "A": { "type": "Button", "label": "A", "x": 40, "y": 40 },
   "B": { "type": "Button", "label": "B", "x": 40, "y": 120 },

@@ -3,6 +3,7 @@
   "title": "2-bit 比较器（GT/EQ/LT）",
   "description": "比较 2-bit 无符号数 A 与 B：输出 GT(>)、EQ(=)、LT(<)。要求三者始终独热。",
   "allowedComponents": ["And", "Or", "Not", "Xor", "Xnor", "Button", "Lamp", "Repeater"],
+  "allowCycles": false,
   "devices": {
     "A1": { "type": "Button", "label": "A1", "x": 40, "y": 20 },
     "A0": { "type": "Button", "label": "A0", "x": 40, "y": 80 },

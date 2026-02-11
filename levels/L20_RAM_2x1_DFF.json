@@ -3,6 +3,7 @@
   "title": "2×1bit RAM（用 DFF + 译码/选择实现）",
   "description": "实现 2-word 1-bit 存储：地址 A 选择字；CLK 上升沿在 WE=1 时写入 D；输出 Y 为当前地址读出值。RST 清零两字。",
   "allowedComponents": ["Dff", "And", "Or", "Not", "Button", "Lamp", "Repeater"],
+  "allowCycles": true,
   "devices": {
     "A": { "type": "Button", "label": "A(addr)", "x": 40, "y": 40 },
     "D": { "type": "Button", "label": "D(data)", "x": 40, "y": 110 },

@@ -3,6 +3,7 @@
   "title": "卡诺图化简（4 变量）",
   "description": "实现四变量函数：F(W,X,Y,Z) = Σm(0,1,2,3,7,11,15)。请用 And/Or/Not 实现输出 F。",
   "allowedComponents": ["And", "Or", "Not", "Button", "Lamp", "Repeater"],
+  "allowCycles": false,
   "devices": {
     "W": { "type": "Button", "label": "W", "x": 40, "y": 40 },
     "X": { "type": "Button", "label": "X", "x": 40, "y": 110 },
