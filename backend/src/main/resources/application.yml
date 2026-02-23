@@ -2,13 +2,11 @@ server:
   port: 8080
   error:
     include-message: always
-    include-binding-errors: always
     include-stacktrace: always
 
 logging:
   level:
     org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE
 
 management:
   endpoints:
@@ -23,19 +21,19 @@ springdoc:
     path: /v3/api-docs
 
 spring:
-    neo4j:
-        uri: bolt://localhost:7687
-        authentication:
-            username: neo4j
-            password: neo4j_pwd
-    datasource:
-        url: jdbc:postgresql://localhost:5433/diglearn
-        username: postgres
-        password: 123456
-    jpa:
-        hibernate:
-            ddl-auto: update
-        properties:
-            hibernate:
-                format_sql: true
-        open-in-view: false
+  neo4j:
+    uri: bolt://localhost:7687
+    authentication:
+      username: neo4j
+      password: neo4j_pwd
+  datasource:
+    url: jdbc:postgresql://localhost:5433/diglearn
+    username: postgres
+    password: 123456
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false

@@ -12,14 +12,6 @@ export default defineConfig({
       '/api': 'http://localhost:8080',
     },
   },
-  // resolve: {
-  //   alias: {
-  //     '@yowasp/yosys/gen/bundle.js': path.resolve(
-  //       __dirname,
-  //       'node_modules/@yowasp/yosys/gen/bundle.js'
-  //     ),
-  //   },
-  // },
   optimizeDeps: {
     exclude: ['@yowasp/yosys'],
   },
