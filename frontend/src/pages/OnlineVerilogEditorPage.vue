@@ -848,13 +848,12 @@ p { margin: 0; }
 .pill__input {
   border: none;
   outline: none;
-  background: transparent;
   color: inherit;
   min-width: 140px;
   font-size: 13px;
   cursor: pointer;
 }
-.pill__input option { background: #1e293b; color: #e2e8f0; }
+.pill__input option { color: #e2e8f0; }
 
 /* ─── Buttons ─── */
 .btn-ghost {

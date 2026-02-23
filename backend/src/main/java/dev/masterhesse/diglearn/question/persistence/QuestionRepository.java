@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -86,38 +87,38 @@ public interface QuestionRepository extends JpaRepository<QuestionEntity, UUID> 
      * <p>结果使用 RANDOM() 随机排序（Demo 合理，生产环境可改为按
      * 错误次数或遗忘曲线排序）。</p>
      */
-    @Query(nativeQuery = true, value = """
-            SELECT *
-            FROM (
-                SELECT DISTINCT q.*
-                FROM questions        q
-                JOIN question_tag_map q_match ON q.id = q_match.question_id
-                WHERE q.question_pool = 'SUPPLEMENT'
-                  AND q.status        = 'PUBLISHED'
-                  AND q.id           <> :sourceQuestionId
-                  -- Tag 权重 ≥ 70：精确 KP 匹配 + 跨 KP 溯源，排除纯主题 tag
-                  AND q_match.tag_id IN (
-                          SELECT src.tag_id
-                          FROM   question_tag_map src
-                          WHERE  src.question_id = :sourceQuestionId
-                            AND  src.weight     >= 70
-                  )
-                  -- 排除用户已掌握的题目
-                  AND q.id NOT IN (
-                          SELECT uqs.question_id
-                          FROM   user_question_state uqs
-                          WHERE  uqs.user_id  = :userId
-                            AND  uqs.mastered = TRUE
-                  )
-            ) candidate
-            ORDER BY RANDOM()
-            LIMIT :limit
-            """)
-    List<QuestionEntity> findReinforcement(
-            @Param("sourceQuestionId") UUID   sourceQuestionId,
-            @Param("userId")           String userId,
-            @Param("limit")            int    limit
-    );
+        @Query(nativeQuery = true, value = """
+                SELECT *
+                FROM (
+                        SELECT DISTINCT q.*
+                        FROM questions        q
+                        JOIN question_tag_map q_match ON q.id = q_match.question_id
+                        WHERE q.question_pool = 'SUPPLEMENT'
+                        AND q.status        = 'PUBLISHED'
+                        AND q.id           <> :sourceQuestionId
+                        -- Tag 权重 ≥ 70：精确 KP 匹配 + 跨 KP 溯源，排除纯主题 tag
+                        AND q_match.tag_id IN (
+                                SELECT src.tag_id
+                                FROM   question_tag_map src
+                                WHERE  src.question_id = :sourceQuestionId
+                                AND  src.weight     >= 70
+                        )
+                        -- 排除用户已掌握的题目
+                        AND q.id NOT IN (
+                                SELECT uqs.question_id
+                                FROM   user_question_state uqs
+                                WHERE  uqs.user_id  = :userId
+                                AND  uqs.mastered = TRUE
+                        )
+                ) candidate
+                ORDER BY RANDOM()
+                LIMIT :limit
+                """)
+        List<QuestionEntity> findReinforcement(
+                @Param("sourceQuestionId") UUID   sourceQuestionId,
+                @Param("userId")           String userId,
+                @Param("limit")            int    limit
+        );
 
         @Query(value = """
         select distinct tkm.kp_id
@@ -125,5 +126,18 @@ public interface QuestionRepository extends JpaRepository<QuestionEntity, UUID> 
         join tag_kp_map tkm on tkm.tag_id = qtm.tag_id
         where qtm.question_id = :questionId
         """, nativeQuery = true)
-    List<String> findKpIdsByQuestionId(UUID questionId);
+        List<String> findKpIdsByQuestionId(UUID questionId);
+
+
+        @Query(value = """
+        select tkm.kp_id
+        from question_tag_map qtm
+        join tag_kp_map tkm on tkm.tag_id = qtm.tag_id
+        where qtm.question_id = :questionId
+        group by tkm.kp_id
+        order by sum((qtm.weight::bigint) * (tkm.weight::bigint)) desc
+        limit 1
+        """, nativeQuery = true)
+        Optional<String> findPrimaryKpIdByQuestionId(@Param("questionId") UUID questionId);
+
 }

@@ -48,9 +48,19 @@ public class PracticeController {
         practiceService.markMastered(userId, questionId);
     }
 
-    // 巩固练习：从某道错题触发，推荐 N 道相关题（首次不显示答案，提交后显示）
+    /**
+     * 巩固练习（从某道错题触发）
+     * - 若目标题的前置知识点（depth<=3）未掌握：返回 knowledgePoints（告诉用户先学什么）
+     * - 若已掌握前置：返回 questions（SUPPLEMENT 题）
+     *
+     * 返回结构：
+     * {
+     *   "questions": [...],
+     *   "knowledgePoints": [...]
+     * }
+     */
     @GetMapping("/reinforcement/{sourceQuestionId}")
-    public List<PracticeService.QuestionRow> reinforcement(
+    public PracticeService.ReinforcementResponse reinforcement(
             @RequestHeader("X-User-Id") String userId,
             @PathVariable("sourceQuestionId") UUID sourceQuestionId,
             @RequestParam(value = "count", required = false, defaultValue = "2") int count

@@ -24,7 +24,16 @@
           </label>
           <label class="pill" v-if="tab === 'chapter'">
             <span class="pill__label">分类</span>
-            <input v-model="category" class="pill__input pill__input--sm" placeholder="BOOL" />
+            <select
+              v-model="category"
+              class="pill__input pill__input--sm ui-select"
+              :disabled="loadingChapters"
+              @change="onCategoryChange"
+            >
+              <option v-for="c in categoryOptions" :key="c" :value="c">
+                {{ c }}
+              </option>
+            </select>
           </label>
           <button class="btn-ghost" @click="reloadAll">↺ 刷新</button>
         </div>
@@ -266,29 +275,62 @@
           </div>
 
           <!-- Reinforcement List -->
-          <div v-if="reinforcement.length" class="reinforce">
-            <div class="reinforce__title">巩固练习题</div>
-            <div class="q-list">
-              <div v-for="rr in reinforcement" :key="rr.questionId" class="q-item">
-                <div class="q-body">
-                  <div class="q-title-row">
-                    <span class="type-chip">{{ typeLabel(rr.type) }}</span>
-                    <span class="q-stem">{{ rr.stem }}</span>
+          <div v-if="reinforcement.length || reinforcementKps.length" class="reinforce">
+
+            <!-- 先学知识点 -->
+            <template v-if="reinforcementKps.length">
+              <div class="reinforce__title">建议先学知识点</div>
+              <div class="q-list">
+                <div v-for="k in reinforcementKps" :key="k.kpId" class="q-item">
+                  <div class="q-body">
+                    <div class="q-title-row">
+                      <span class="type-chip">知识点</span>
+                      <span class="q-stem">{{ k.title || k.kpId }}</span>
+                    </div>
+                    <div class="q-meta">
+                      <span class="meta-pill mono">{{ k.kpId }}</span>
+                      <span v-if="k.difficulty != null" class="meta-pill">难度 {{ k.difficulty }}</span>
+                      <span v-if="k.depth != null" class="meta-pill">前置层级 +{{ k.depth }}</span>
+                    </div>
                   </div>
-                  <div v-if="rr.difficulty != null" class="q-meta">
-                    <span class="meta-pill">难度 {{ rr.difficulty }}</span>
+
+                  <div class="q-side">
+                    <button class="btn-primary btn-sm" @click="goToKp(k.kpId)">
+                      去章节练习
+                    </button>
                   </div>
-                </div>
-                <div class="q-side">
-                  <button
-                    class="btn-primary btn-sm"
-                    @click="openQuestion(rr, { mode: 'REINFORCEMENT', sourceQuestionId: reinforcementSourceQuestionId })"
-                  >
-                    练这题
-                  </button>
                 </div>
               </div>
-            </div>
+            </template>
+
+            <!-- 巩固题 -->
+            <template v-if="reinforcement.length">
+              <div class="reinforce__title" :style="reinforcementKps.length ? { marginTop: '12px' } : {}">
+                巩固练习题
+              </div>
+              <div class="q-list">
+                <div v-for="rr in reinforcement" :key="rr.questionId" class="q-item">
+                  <div class="q-body">
+                    <div class="q-title-row">
+                      <span class="type-chip">{{ typeLabel(rr.type) }}</span>
+                      <span class="q-stem">{{ rr.stem }}</span>
+                    </div>
+                    <div v-if="rr.difficulty != null" class="q-meta">
+                      <span class="meta-pill">难度 {{ rr.difficulty }}</span>
+                    </div>
+                  </div>
+                  <div class="q-side">
+                    <button
+                      class="btn-primary btn-sm"
+                      @click="openQuestion(rr, { mode: 'REINFORCEMENT', sourceQuestionId: reinforcementSourceQuestionId })"
+                    >
+                      练这题
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </template>
+
           </div>
 
         </div><!-- /runner -->
@@ -342,6 +384,18 @@ type SubmitResult = {
   kpIds?: string[]
 }
 
+type RecoKpRowApi = {
+  kpId: string
+  title?: string | null
+  difficulty?: number | null
+  depth?: number | null
+}
+
+type ReinforcementResponseApi = {
+  questions?: any[]
+  knowledgePoints?: RecoKpRowApi[]
+}
+
 type Option = { id: string; text: string }
 
 type ActiveQuestion = {
@@ -357,8 +411,10 @@ type ActiveQuestion = {
   }
 }
 
+const baseCategoryOptions = ['FND','BOOL', 'COMB', 'ARITH', 'SEQ', 'TIM', 'FSM','MEM']
+
 const tab = ref<'chapter' | 'recommended'>('chapter')
-const category = ref('BOOL')
+const category = ref('FND')
 const query = ref('')
 const filter = ref<Filter>('all')
 
@@ -368,6 +424,7 @@ const selectedKpId = ref<string | null>(null)
 const rows = ref<QuestionRowUi[]>([])
 const reinforcement = ref<QuestionRowUi[]>([])
 const reinforcementSourceQuestionId = ref<string | null>(null)
+const reinforcementKps = ref<RecoKpRowApi[]>([])
 
 const loadingChapters = ref(false)
 const chaptersError = ref<string | null>(null)
@@ -386,7 +443,22 @@ const singleSelected = ref<string>('')
 const multiSelected = ref<string[]>([])
 const shortAnswer = ref<string>('')
 
+const categoryOptions = computed(() => {
+  const cur = (category.value || '').trim()
+  const out = [...baseCategoryOptions]
+  if (cur && !out.includes(cur)) out.unshift(cur)
+  return out
+})
+
 // ---------- small helpers ----------
+async function onCategoryChange() {
+  // 切换分类后：清空当前章节选择与题目列表，并重新加载章节
+  selectedKpId.value = null
+  rows.value = []
+  closeRunner()
+  await loadChapters()
+}
+
 function toErrMsg(e: any): string {
   return e?.message || String(e)
 }
@@ -594,6 +666,7 @@ async function loadRecommended() {
 
 async function reloadRight() {
   reinforcement.value = []
+  reinforcementKps.value = []
   reinforcementSourceQuestionId.value = null
   submitResult.value = null
   unlockedSolution.value = null
@@ -625,6 +698,7 @@ function closeRunner() {
   submitResult.value = null
   unlockedSolution.value = null
   reinforcement.value = []
+  reinforcementKps.value = []
   reinforcementSourceQuestionId.value = null
   singleSelected.value = ''
   multiSelected.value = []
@@ -643,6 +717,7 @@ async function openQuestion(
   submitResult.value = null
   unlockedSolution.value = null
   reinforcement.value = []
+  reinforcementKps.value = []
   reinforcementSourceQuestionId.value = ctx?.sourceQuestionId ?? null
   try {
     const q = await api.get<QuestionResponse>(`/api/questions/${row.questionId}`)
@@ -725,13 +800,38 @@ async function loadReinforcement() {
   reinforcing.value = true
   try {
     reinforcementSourceQuestionId.value = active.value.id
-    const raw = await api.get<any[]>(`/api/practice/reinforcement/${active.value.id}?count=2`)
-    reinforcement.value = dedupeByQuestionId(raw.map(normalizeQuestionRow))
+
+    const resp = await api.get<ReinforcementResponseApi>(
+      `/api/practice/reinforcement/${active.value.id}?count=2`
+    )
+
+    reinforcement.value = dedupeByQuestionId((resp.questions ?? []).map(normalizeQuestionRow))
+    reinforcementKps.value = resp.knowledgePoints ?? []
   } catch (e: any) {
     rightError.value = toErrMsg(e)
   } finally {
     reinforcing.value = false
   }
+}
+
+function inferCategoryFromKpId(kpId: string): string | null {
+  // 约定：DC-BOOL-05 / DC-COMB-01 这种
+  const parts = String(kpId || '').split('-')
+  if (parts.length >= 2 && parts[1]) return parts[1]
+  return null
+}
+
+async function goToKp(kpId: string) {
+  // 尽量自动切分类（BOOL/COMB/SEQ...）
+  const inferred = inferCategoryFromKpId(kpId)
+  if (inferred) category.value = inferred
+
+  tab.value = 'chapter'
+  selectedKpId.value = kpId
+
+  closeRunner()
+  await loadChapters()
+  await loadChapterQuestions(kpId)
 }
 
 onMounted(async () => {
@@ -850,12 +950,11 @@ p { margin: 0; }
 .pill__input {
   border: none;
   outline: none;
-  background: transparent;
-  color: inherit;
+  color: var(--text-color);
   min-width: 160px;
   font-size: 13px;
 }
-.pill__input--sm { min-width: 80px; }
+.pill__input--sm { min-width: 80px; color: var(--text-color); }
 
 /* ─── Buttons ─── */
 .btn-ghost {
