@@ -68,7 +68,8 @@ public class PracticeService {
             List<QuestionRow> questions,
             List<RecoKpRow> knowledgePoints
     ) {}
-
+    public record StatsResponse(long attempts, int accuracy, long wrongPool) {}
+    
     // ---- 章节列表 ----
 
     public List<ChapterRow> listChapters(String userIdHeader, String category) {
@@ -293,4 +294,19 @@ public class PracticeService {
                 })
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public StatsResponse getStats(String userId) {
+        // 已练题数：按“提交次数”统计（question_attempts）
+        long total = attemptRepository.countByUserIdAndIsCorrectIsNotNull(userId);
+        long correct = attemptRepository.countByUserIdAndIsCorrectTrue(userId);
+
+        int accuracy = (total == 0) ? 0 : (int) Math.round(correct * 100.0 / total);
+
+        // 错题池：未掌握且 wrong_count>0 的题目数（user_question_state）
+        long wrongPool = stateRepository.countByUserIdAndMasteredFalseAndWrongCountGreaterThan(userId, 0);
+
+        return new StatsResponse(total, accuracy, wrongPool);
+    }
+    
 }

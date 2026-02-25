@@ -1,6 +1,5 @@
 <template>
   <section class="page">
-
     <!-- ─── Hero ─── -->
     <div class="card hero">
       <div class="hero-glow" />
@@ -8,15 +7,23 @@
       <div class="hero-top">
         <div class="hero-ident">
           <div class="avatar">{{ displayInitial }}</div>
+
           <div class="hero-meta">
-            <div class="hero-greeting">你好，{{ profile.displayName }} 👋</div>
-            <div class="hero-uid-row">
-              <span class="uid-chip mono">UID: {{ profile.userId }}</span>
+            <div class="hero-greeting">你好，{{ displayName }} 👋</div>
+
+            <div class="hero-chips">
+              <span class="chip mono">UID: {{ meUserId }}</span>
+              <span class="chip mono">username: {{ meUsername || '-' }}</span>
+              <span class="chip mono">email: {{ meEmail || '-' }}</span>
+              <span class="chip mono">role: {{ meRole || '-' }}</span>
             </div>
+
+            <div v-if="meErr" class="hero-err">{{ meErr }}</div>
           </div>
         </div>
+
         <div class="hero-actions">
-          <button class="btn-primary" @click="goPractice()">⚡ 开始章节练习</button>
+          <button class="btn-primary" @click="goPractice()">开始章节练习</button>
           <button class="btn-ghost" @click="goPractice('recommended')">推荐题目</button>
         </div>
       </div>
@@ -30,7 +37,9 @@
         </div>
         <div class="stat-div" />
         <div class="stat">
-          <div class="stat-v">{{ stats.accuracy }}<span class="stat-unit">%</span></div>
+          <div class="stat-v">
+            {{ stats.accuracy }}<span class="stat-unit">%</span>
+          </div>
           <div class="stat-k">正确率</div>
         </div>
         <div class="stat-div" />
@@ -40,79 +49,119 @@
         </div>
       </div>
     </div>
-
-    <!-- ─── Body ─── -->
-    <div class="body-grid">
-
-      <!-- Continue Learning -->
-      <div class="card">
-        <div class="panel-head">
-          <span class="panel-title">继续学习</span>
-          <span class="cnt-badge">2 个章节</span>
-        </div>
-        <div class="learn-list">
-          <div class="learn-item">
-            <div class="learn-item__left">
-              <span class="kp-chip mono">DC-BOOL-02</span>
-              <div>
-                <div class="learn-title">布尔代数基本定律</div>
-                <div class="learn-sub">建议先做 3~5 题巩固</div>
-              </div>
-            </div>
-            <button class="btn-primary btn-sm" @click="goPractice('chapter', 'DC-BOOL-02')">练这个</button>
-          </div>
-          <div class="learn-item">
-            <div class="learn-item__left">
-              <span class="kp-chip mono">DC-BOOL-05</span>
-              <div>
-                <div class="learn-title">卡诺图化简（2~4 变量）</div>
-                <div class="learn-sub">难度 2</div>
-              </div>
-            </div>
-            <button class="btn-primary btn-sm" @click="goPractice('chapter', 'DC-BOOL-05')">练这个</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tools -->
-      <div class="card">
-        <div class="panel-head">
-          <span class="panel-title">工具箱</span>
-        </div>
-        <button class="tool-item" @click="goVerilog()">
-          <div class="tool-ico">⌨️</div>
-          <div class="tool-body">
-            <div class="tool-title">Online Verilog Editor</div>
-            <div class="tool-sub">做题时可随时打开在线编辑器做验证</div>
-          </div>
-          <span class="tool-arrow">→</span>
-        </button>
-      </div>
-
-    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { api } from '../lib/api'
 import { name, userId } from '../stores/session'
+
+type MeResponse = {
+  userId: string
+  username: string
+  email: string
+  name: string
+  role: 'STUDENT' | 'TEACHER' | 'ADMIN' | string
+}
+
+type MyClassResponse = {
+  classId: string
+  className: string
+  teacherId: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | string
+  requestedAt: string
+  decidedAt?: string | null
+}
 
 const router = useRouter()
 
-const profile = computed(() => ({
-  displayName: name.value || 'Student',
-  userId: userId.value,
-}))
+const me = ref<MeResponse | null>(null)
+const meErr = ref('')
 
-const displayInitial = computed(() =>
-  (name.value || 'S').charAt(0).toUpperCase()
+const classLoading = ref(false)
+const classErr = ref('')
+const myClasses = ref<MyClassResponse[]>([])
+
+const isStudent = computed(() => (me.value?.role || '') === 'STUDENT')
+
+const approvedClasses = computed(() =>
+  myClasses.value.filter((c) => c.status === 'APPROVED')
 )
+const pendingClasses = computed(() =>
+  myClasses.value.filter((c) => c.status === 'PENDING')
+)
+
+const displayName = computed(() => me.value?.name || name.value || 'Student')
+const displayInitial = computed(() => displayName.value.charAt(0).toUpperCase())
+
+const meUserId = computed(() => me.value?.userId || userId.value || '')
+const meUsername = computed(() => me.value?.username || '')
+const meEmail = computed(() => me.value?.email || '')
+const meRole = computed(() => me.value?.role || '')
 
 const stats = reactive({
   attempts: 0,
   accuracy: 0,
   wrongPool: 0,
+})
+
+type PracticeStatsResponse = {
+  attempts: number
+  accuracy: number
+  wrongPool: number
+}
+
+async function loadStats() {
+  try {
+    const s = await api.get<PracticeStatsResponse>('/api/practice/stats')
+    stats.attempts = s.attempts
+    stats.accuracy = s.accuracy
+    stats.wrongPool = s.wrongPool
+  } catch (e: any) {
+    // 这里你可以选择静默失败，或显示提示
+    // meErr.value = e?.message || '加载统计失败'
+  }
+}
+
+async function loadMe() {
+  meErr.value = ''
+  try {
+    const data = await api.get<MeResponse>('/api/auth/me')
+    me.value = data
+
+    // 同步到 store（避免旧页面还依赖 name/userId）
+    userId.value = data.userId
+    name.value = data.name
+  } catch (e: any) {
+    // 未登录就跳回登录页
+    const msg = e?.message || '加载个人信息失败'
+    meErr.value = msg
+    if (String(msg).includes('401')) {
+      await router.replace({ path: '/login', query: { redirect: '/profile' } })
+    }
+  }
+}
+
+async function loadMyClasses() {
+  classErr.value = ''
+  classLoading.value = true
+  try {
+    myClasses.value = await api.get<MyClassResponse[]>('/api/classes/mine')
+  } catch (e: any) {
+    classErr.value = e?.message || '加载班级失败'
+  } finally {
+    classLoading.value = false
+  }
+}
+
+onMounted(async () => {
+  await loadMe()
+  await loadStats()     // ✅ 新增：动态统计
+  if (isStudent.value) {
+    await loadMyClasses()
+  }
 })
 
 function goPractice(tab: 'chapter' | 'recommended' = 'chapter', kpId?: string) {
@@ -140,8 +189,15 @@ function goVerilog() {
   gap: 14px;
   align-items: start;
 }
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 @media (max-width: 900px) {
-  .body-grid { grid-template-columns: 1fr; }
+  .body-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ─── Card ─── */
@@ -152,7 +208,9 @@ function goVerilog() {
   padding: 20px;
   position: relative;
 }
-.hero { overflow: hidden; }
+.hero {
+  overflow: hidden;
+}
 
 /* ─── Hero Glow ─── */
 .hero-glow {
@@ -192,21 +250,36 @@ function goVerilog() {
   color: #c5c8ff;
   flex-shrink: 0;
 }
-.hero-greeting { font-size: 19px; font-weight: 800; }
-.hero-uid-row { margin-top: 5px; }
-.uid-chip {
-  display: inline-block;
-  font-size: 11px;
-  padding: 3px 9px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  opacity: 0.65;
+.hero-greeting {
+  font-size: 19px;
+  font-weight: 800;
 }
 .hero-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.hero-chips {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.chip {
+  display: inline-block;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  opacity: 0.7;
+}
+.hero-err {
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: 0.7;
+  color: rgba(255, 200, 200, 0.95);
 }
 
 /* ─── Separator ─── */
@@ -260,7 +333,9 @@ function goVerilog() {
   cursor: pointer;
   transition: background 0.15s;
 }
-.btn-primary:hover { background: rgba(100, 108, 255, 0.28); }
+.btn-primary:hover {
+  background: rgba(100, 108, 255, 0.28);
+}
 .btn-primary.btn-sm {
   padding: 6px 12px;
   font-size: 12px;
@@ -279,7 +354,10 @@ function goVerilog() {
   color: inherit;
   transition: background 0.15s, opacity 0.15s;
 }
-.btn-ghost:hover { background: rgba(255, 255, 255, 0.07); opacity: 1; }
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.07);
+  opacity: 1;
+}
 
 /* ─── Panel Head ─── */
 .panel-head {
@@ -288,7 +366,10 @@ function goVerilog() {
   gap: 10px;
   margin-bottom: 14px;
 }
-.panel-title { font-weight: 800; font-size: 15px; }
+.panel-title {
+  font-weight: 800;
+  font-size: 15px;
+}
 .cnt-badge {
   font-size: 11px;
   padding: 2px 9px;
@@ -316,7 +397,9 @@ function goVerilog() {
   background: rgba(255, 255, 255, 0.03);
   transition: background 0.15s;
 }
-.learn-item:hover { background: rgba(255, 255, 255, 0.055); }
+.learn-item:hover {
+  background: rgba(255, 255, 255, 0.055);
+}
 .learn-item__left {
   display: flex;
   align-items: flex-start;
@@ -337,8 +420,72 @@ function goVerilog() {
   flex-shrink: 0;
   margin-top: 2px;
 }
-.learn-title { font-weight: 700; font-size: 14px; }
-.learn-sub   { font-size: 12px; opacity: 0.55; margin-top: 3px; }
+.learn-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+.learn-sub {
+  font-size: 12px;
+  opacity: 0.55;
+  margin-top: 3px;
+}
+
+/* ─── Student Class ─── */
+.class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.class-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+.class-left {
+  flex: 1;
+  min-width: 0;
+}
+.class-name {
+  font-weight: 800;
+  font-size: 14px;
+}
+.class-sub {
+  font-size: 12px;
+  opacity: 0.55;
+  margin-top: 4px;
+  word-break: break-all;
+}
+.status-badge {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+.status-badge.ok {
+  background: rgba(80, 200, 120, 0.12);
+  border-color: rgba(80, 200, 120, 0.28);
+  color: rgba(200, 255, 220, 0.95);
+}
+.hint {
+  margin-top: 12px;
+  font-size: 12px;
+  opacity: 0.6;
+}
+.muted {
+  font-size: 13px;
+  opacity: 0.6;
+}
+.warn {
+  font-size: 13px;
+  color: rgba(255, 200, 200, 0.95);
+  opacity: 0.9;
+}
 
 /* ─── Tools ─── */
 .tool-item {
@@ -359,13 +506,37 @@ function goVerilog() {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.14);
 }
-.tool-ico   { font-size: 22px; flex-shrink: 0; }
-.tool-body  { flex: 1; min-width: 0; }
-.tool-title { font-weight: 700; font-size: 14px; }
-.tool-sub   { font-size: 12px; opacity: 0.55; margin-top: 3px; }
-.tool-arrow { font-size: 16px; opacity: 0.4; flex-shrink: 0; transition: transform 0.15s; }
-.tool-item:hover .tool-arrow { transform: translateX(3px); opacity: 0.65; }
+.tool-ico {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.tool-body {
+  flex: 1;
+  min-width: 0;
+}
+.tool-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+.tool-sub {
+  font-size: 12px;
+  opacity: 0.55;
+  margin-top: 3px;
+}
+.tool-arrow {
+  font-size: 16px;
+  opacity: 0.4;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.tool-item:hover .tool-arrow {
+  transform: translateX(3px);
+  opacity: 0.65;
+}
 
 /* ─── Utilities ─── */
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+}
 </style>

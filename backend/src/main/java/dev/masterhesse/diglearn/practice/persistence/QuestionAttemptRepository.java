@@ -49,4 +49,8 @@ public interface QuestionAttemptRepository extends JpaRepository<QuestionAttempt
           and q.question_pool  = 'CHAPTER'
         """, nativeQuery = true)
     long countAttemptedDistinctByUserAndKpId(String userId, String kpId);
+
+    long countByUserIdAndIsCorrectIsNotNull(String userId);
+
+    long countByUserIdAndIsCorrectTrue(String userId);
 }

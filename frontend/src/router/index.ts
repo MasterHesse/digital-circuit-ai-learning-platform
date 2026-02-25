@@ -1,57 +1,96 @@
 // src/router/index.ts
 import { createRouter, createWebHistory } from 'vue-router'
-import { isLoggedIn } from '../stores/session'
+import { ensureMe, isLoggedIn, me } from '../stores/session'
 
+import Promote from '../pages/Promote.vue'
 import Login from '../pages/Login.vue'
+import Register from '../pages/Register.vue'
 import Profile from '../pages/Profile.vue'
 import Practice from '../pages/Practice.vue'
 import OnlineVerilogEditorPage from '../pages/OnlineVerilogEditorPage.vue'
+import Classes from '../pages/Classes.vue'
+import ClassDetail from '../pages/ClassDetail.vue'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    // 关键：默认先去登录页
-    { path: '/', redirect: '/login' },
+    { path: '/', redirect: '/profile' },
 
     { path: '/login', name: 'login', component: Login },
+    { path: '/register', name: 'register', component: Register },
 
-    // 个人主页（你希望登录后到这里）
     {
       path: '/profile',
       name: 'profile',
       component: Profile,
       meta: { requiresAuth: true },
     },
-
     {
       path: '/practice',
       name: 'practice',
       component: Practice,
       meta: { requiresAuth: true },
     },
-
     {
       path: '/verilog',
       name: 'verilog',
       component: OnlineVerilogEditorPage,
       meta: { requiresAuth: true },
     },
+    {
+      path: '/promote',
+      name: 'promote',
+      component: Promote,
+      meta: { requiresAuth: true, requiresRole: 'ADMIN' },
+    },
+    {
+      path: '/classes',
+      name: 'classes',
+      component: Classes,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/classes/:id',
+      name: 'classDetail',
+      component: ClassDetail,
+      meta: { requiresAuth: true },
+    },
 
-    // 404：未登录就回登录；已登录也可以改成回 /profile
-    { path: '/:pathMatch(.*)*', redirect: '/login' },
+    // 404：更合理的做法：已登录回 profile，否则回 login
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: () => (isLoggedIn.value ? '/profile' : '/login'),
+    },
   ],
 })
 
-router.beforeEach((to) => {
-  // 未登录访问受保护页面 -> 去登录
+router.beforeEach(async (to) => {
+  if (to.meta.requiresAuth || to.name === 'login' || to.name === 'register') {
+    try {
+      await ensureMe()
+    } catch (e) {
+      console.error('[ensureMe failed]', e)
+    }
+  }
+
   if (to.meta.requiresAuth && !isLoggedIn.value) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
-  // 已登录还访问登录页 -> 去个人主页
-  if (to.name === 'login' && isLoggedIn.value) {
+  // ✅ ADMIN 路由保护
+  const requiredRole = (to.meta as any).requiresRole as string | undefined
+  if (requiredRole) {
+    const role = me.value?.role
+    if (!(role === requiredRole || role === `ROLE_${requiredRole}`)) {
+      return { name: 'profile' } // 或者你做一个 403 页面
+    }
+  }
+
+  if ((to.name === 'login' || to.name === 'register') && isLoggedIn.value) {
     return { name: 'profile' }
   }
+
+  return true
 })
 
 export default router

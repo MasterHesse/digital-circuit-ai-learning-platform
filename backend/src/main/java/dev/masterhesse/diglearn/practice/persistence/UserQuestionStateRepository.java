@@ -3,6 +3,7 @@ package dev.masterhesse.diglearn.practice.persistence;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
@@ -39,4 +40,29 @@ public interface UserQuestionStateRepository extends JpaRepository<UserQuestionS
         order by uqs.last_wrong_at desc nulls last
         """, nativeQuery = true)
     List<RecommendedRow> findRecommended(String userId);
+
+    interface ProgressRow {
+        String getUserId();
+        long getAttemptedCount();
+        long getMasteredCount();
+        long getUnmasteredWrongCount();
+        long getTotalWrongCount();
+        Instant getLastAttemptAt();
+    }
+
+    @Query(value = """
+        select
+            uqs.user_id as userId,
+            coalesce(sum(case when uqs.last_attempt_at is not null then 1 else 0 end), 0) as attemptedCount,
+            coalesce(sum(case when uqs.mastered = true then 1 else 0 end), 0) as masteredCount,
+            coalesce(sum(case when uqs.mastered = false and uqs.wrong_count > 0 then 1 else 0 end), 0) as unmasteredWrongCount,
+            coalesce(sum(uqs.wrong_count), 0) as totalWrongCount,
+            max(uqs.last_attempt_at) as lastAttemptAt
+        from user_question_state uqs
+        where uqs.user_id in (:userIds)
+        group by uqs.user_id
+        """, nativeQuery = true)
+    List<ProgressRow> findProgressByUserIds(@Param("userIds") List<String> userIds);    
+
+    long countByUserIdAndMasteredFalseAndWrongCountGreaterThan(String userId, int wrongCount);
 }

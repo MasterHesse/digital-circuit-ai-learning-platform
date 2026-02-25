@@ -1,43 +1,134 @@
 // src/lib/api.ts
-import { accessToken, userId } from '../stores/session'
+import { userId } from '../stores/session'
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
-function buildErrorMessage(status: number, statusText: string, text: string) {
-  const msg = `${status} ${statusText}`.trim()
-  return text ? `${msg}: ${text}` : msg
+export class ApiError extends Error {
+  status: number
+  statusText: string
+  url: string
+  method: HttpMethod
+  rawBody: string
+
+  constructor(opts: {
+    status: number
+    statusText: string
+    url: string
+    method: HttpMethod
+    message: string
+    rawBody: string
+  }) {
+    super(opts.message)
+    this.name = 'ApiError'
+    this.status = opts.status
+    this.statusText = opts.statusText
+    this.url = opts.url
+    this.method = opts.method
+    this.rawBody = opts.rawBody
+  }
+}
+
+let xsrfInFlight: Promise<void> | null = null
+async function ensureXsrfCookie() {
+  if (getCookie('XSRF-TOKEN')) return
+  if (!xsrfInFlight) {
+    xsrfInFlight = fetch('/api/auth/csrf', { credentials: 'include' })
+      .then(() => undefined)
+      .finally(() => {
+        xsrfInFlight = null
+      })
+  }
+  await xsrfInFlight
+}
+
+function getCookie(name: string): string | null {
+  const parts = document.cookie.split(';').map((p) => p.trim())
+  for (const p of parts) {
+    if (!p) continue
+    const idx = p.indexOf('=')
+    if (idx < 0) continue
+    const k = p.slice(0, idx)
+    const v = p.slice(idx + 1)
+    if (k === name) {
+      try {
+        return decodeURIComponent(v)
+      } catch {
+        return v
+      }
+    }
+  }
+  return null
+}
+
+function isSafeMethod(method: HttpMethod) {
+  return method === 'GET'
+}
+
+function pickMessageFromJson(obj: any): string | null {
+  if (!obj || typeof obj !== 'object') return null
+  const candidates = [obj.message, obj.detail, obj.title, obj.error, obj.error_description]
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim()) return c.trim()
+  }
+  if (Array.isArray(obj.errors) && obj.errors.length) {
+    const m = obj.errors
+      .map((e: any) => e?.defaultMessage || e?.message)
+      .filter(Boolean)
+      .join('；')
+    if (m) return m
+  }
+  return null
 }
 
 async function request<T>(method: HttpMethod, url: string, body?: any): Promise<T> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
   }
-
-  // 只有在有 body 时才设置 Content-Type（更通用，也避免某些后端对 GET 带 content-type 的怪行为）
   if (body != null) headers['Content-Type'] = 'application/json'
 
-  // 现在：后端大量接口 require X-User-Id，所以这里统一带上
-  // 以后：如果改成从 token/cookie 识别用户，这个 header 可以逐步移除（页面不需要动）
-  if (userId.value) headers['X-User-Id'] = userId.value
+  // CSRF：CookieCsrfTokenRepository（XSRF-TOKEN -> X-XSRF-TOKEN）
+  if (!isSafeMethod(method)) {
+    if (!getCookie('XSRF-TOKEN')) await ensureXsrfCookie()
+    const xsrf = getCookie('XSRF-TOKEN')
+    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf
+  }
 
-  // 未来：JWT 鉴权（如果你用 Cookie session，则不需要这个 header）
-  if (accessToken.value) headers['Authorization'] = `Bearer ${accessToken.value}`
+  // 过渡期：如果你后端还依赖 X-User-Id，就先保留
+  if (userId.value) headers['X-User-Id'] = userId.value
 
   const res = await fetch(url, {
     method,
     headers,
     body: body == null ? undefined : JSON.stringify(body),
-    // 重要：为未来 cookie-session 登录做准备（同域默认也可不写，但写上更明确）
     credentials: 'include',
   })
 
-  // 错误处理：尽量把后端返回文本带出来（你后端常返回 ResponseStatusException 的 message）
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(buildErrorMessage(res.status, res.statusText, text))
+    const raw = await res.text().catch(() => '')
+    const ct = (res.headers.get('content-type') || '').toLowerCase()
+
+    let msg = raw.trim()
+    if (ct.includes('application/json') && raw) {
+      try {
+        const j = JSON.parse(raw)
+        msg = (pickMessageFromJson(j) || raw).trim()
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!msg) msg = `${res.status} ${res.statusText}`.trim()
+
+    throw new ApiError({
+      status: res.status,
+      statusText: res.statusText,
+      url,
+      method,
+      message: msg, // ✅ 这里直接是后端文案：密码错误 / 审核中 / 用户不存在...
+      rawBody: raw,
+    })
   }
 
-  // 204 No Content
   if (res.status === 204) return undefined as T
 
   const contentType = res.headers.get('content-type') || ''

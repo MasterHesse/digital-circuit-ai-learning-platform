@@ -67,4 +67,11 @@ public class PracticeController {
     ) {
         return practiceService.reinforcement(userId, sourceQuestionId, count);
     }
+
+    // /api/practice/stats
+    @GetMapping("/stats")
+    public PracticeService.StatsResponse stats(@RequestHeader("X-User-Id") String userId) {
+        return practiceService.getStats(userId);
+    }
+
 }

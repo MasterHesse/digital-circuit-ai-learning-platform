@@ -5,6 +5,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import dev.masterhesse.diglearn.user.persistence.AppUserEntity;
 import dev.masterhesse.diglearn.user.persistence.AppUserRepository;
@@ -44,5 +45,24 @@ public class UserService {
         repo.save(e);
 
         return new UserApiModels.UserResponse(e.getUserId(), e.getName());
+    }
+
+    @Transactional
+    public void promoteStudentToTeacher(String userId) {
+        AppUserEntity u = repo.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "user not found: " + userId));
+
+        if (u.getRole() == UserRole.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cannot change ADMIN");
+        }
+        if (u.getRole() == UserRole.TEACHER) {
+            return; // 幂等
+        }
+        if (u.getRole() != UserRole.STUDENT) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "only STUDENT can be promoted");
+        }
+
+        u.setRole(UserRole.TEACHER);
+        repo.save(u);
     }
 }
