@@ -1,8 +1,10 @@
 package dev.masterhesse.diglearn.ai.api;
 
 import dev.masterhesse.diglearn.ai.application.AiChatService;
+import dev.masterhesse.diglearn.auth.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,9 +16,10 @@ public class AiController {
 
     @PostMapping("/chat")
     public AiApiModels.AiChatResponse chat(
-            @RequestHeader(name = "X-User-Id", required = false) String userId,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody AiApiModels.AiChatRequest request
     ) {
+        String userId = principal == null ? null : principal.userId();
         return aiChatService.chat(userId, request);
     }
 }

@@ -152,7 +152,7 @@
                 </div>
 
                 <div class="q-side">
-                  <span v-if="r.attempted === true && !(r.wrongCount && r.wrongCount > 0)" class="st-pill st-ok">✓ 正确</span>
+                  <span v-if="r.attempted === true && !(r.wrongCount && r.wrongCount > 0)" class="st-pill st-ok">✓ 已做</span>
                   <span v-else-if="r.wrongCount && r.wrongCount > 0" class="st-pill st-bad">✗ 错{{ r.wrongCount }}次</span>
                   <span v-else class="st-pill">未做</span>
                   <div class="q-acts">

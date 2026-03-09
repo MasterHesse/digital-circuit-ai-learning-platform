@@ -1,39 +1,59 @@
 package dev.masterhesse.diglearn.ai.application;
 
 import dev.masterhesse.diglearn.ai.api.AiApiModels;
+import dev.masterhesse.diglearn.ai.domain.AiMessageRole;
 import dev.masterhesse.diglearn.ai.domain.AiScene;
 import dev.masterhesse.diglearn.ai.domain.RetrievedChunk;
+import dev.masterhesse.diglearn.ai.persistence.AiConversationEntity;
+import dev.masterhesse.diglearn.ai.persistence.AiConversationMessageEntity;
 import dev.masterhesse.diglearn.ai.provider.LlmGateway;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class AiChatService {
+
+    private static final int MAX_PROMPT_HISTORY_MESSAGES = 8;
 
     private final RagRetrievalService ragRetrievalService;
     private final LearningContextAssembler learningContextAssembler;
     private final PromptFactory promptFactory;
     private final LlmGateway llmGateway;
     private final Environment environment;
+    private final AiConversationService aiConversationService;
 
     public AiApiModels.AiChatResponse chat(String userId, AiApiModels.AiChatRequest request) {
         AiScene scene = request.scene() == null ? AiScene.GENERAL_QA : request.scene();
+        boolean useProfileContext = Boolean.TRUE.equals(request.useProfileContext());
+
+        AiConversationEntity conversation = aiConversationService.requireOrCreateForChat(userId, request);
+
+        List<AiConversationMessageEntity> history = aiConversationService.loadRecentMessages(
+                userId,
+                conversation.getConversationId(),
+                MAX_PROMPT_HISTORY_MESSAGES
+        );
 
         List<RetrievedChunk> chunks = ragRetrievalService.retrieve(request.message());
-        String learningContext = learningContextAssembler.build(userId);
+
+        LearningContextAssembler.LearningContextPayload learningContext =
+                learningContextAssembler.build(userId, useProfileContext);
+
+        String conversationContext = buildConversationContext(history);
 
         LlmGateway.LlmPrompt prompt = new LlmGateway.LlmPrompt(
                 promptFactory.buildSystemPrompt(scene),
-                promptFactory.buildUserPrompt(request, learningContext, chunks)
+                promptFactory.buildUserPrompt(
+                        request,
+                        learningContext.promptText(),
+                        conversationContext,
+                        chunks
+                )
         );
 
         String model = resolveModel(request.model());
@@ -48,29 +68,65 @@ public class AiChatService {
 
         LlmGateway.LlmAnswer answer = llmGateway.chat(prompt, options);
 
-        List<AiApiModels.AiSourceRef> sources = Boolean.FALSE.equals(request.includeSources())
+        List<AiApiModels.AiSourceRef> allSources = chunks.stream().map(this::toSourceRef).toList();
+        List<AiApiModels.AiSourceRef> responseSources = Boolean.FALSE.equals(request.includeSources())
                 ? List.of()
-                : chunks.stream().map(this::toSourceRef).toList();
+                : allSources;
 
         String reasoning = Boolean.TRUE.equals(request.showReasoning())
                 ? blankToNull(answer.reasoning())
                 : null;
 
+        LinkedHashSet<String> usedContexts = new LinkedHashSet<>(learningContext.usedContexts());
+        if (!history.isEmpty()) usedContexts.add("HISTORY");
+        if (!chunks.isEmpty()) usedContexts.add("MATERIAL");
+
+        List<String> usedContextList = new ArrayList<>(usedContexts);
+
+        aiConversationService.appendExchange(
+                userId,
+                conversation.getConversationId(),
+                request.message(),
+                answer.content(),
+                reasoning,
+                model,
+                answer.provider(),
+                answer.fallback(),
+                responseSources,
+                usedContextList
+        );
+
         return new AiApiModels.AiChatResponse(
-                normalizeConversationId(request.conversationId()),
+                conversation.getConversationId(),
                 answer.content(),
                 reasoning,
                 model,
                 thinking,
-                sources,
+                responseSources,
                 List.of(
                         "继续追问一个更具体的问题",
                         "请求讲解相关前置知识点",
                         "请求生成下一步学习建议"
                 ),
                 answer.fallback(),
-                answer.provider()
+                answer.provider(),
+                usedContextList
         );
+    }
+
+    private String buildConversationContext(List<AiConversationMessageEntity> history) {
+        if (history == null || history.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (AiConversationMessageEntity msg : history) {
+            String speaker = msg.getRole() == AiMessageRole.USER ? "用户" : "助教";
+            sb.append("[").append(speaker).append("]\n")
+                    .append(msg.getContent() == null ? "" : msg.getContent().trim())
+                    .append("\n\n");
+        }
+        return sb.toString().trim();
     }
 
     private String resolveModel(String requestedModel) {
@@ -135,13 +191,6 @@ public class AiChatService {
 
     private String getRequiredProperty(String key, String defaultValue) {
         return environment.getProperty(key, defaultValue);
-    }
-
-    private String normalizeConversationId(String conversationId) {
-        if (!StringUtils.hasText(conversationId)) {
-            return UUID.randomUUID().toString();
-        }
-        return conversationId.trim();
     }
 
     private String blankToNull(String value) {

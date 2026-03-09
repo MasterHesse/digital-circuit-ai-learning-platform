@@ -10,6 +10,7 @@
           <RouterLink to="/profile" class="link" :class="{ active: is('/profile') }">Profile</RouterLink>
           <RouterLink to="/classes" class="link" :class="{ active: is('/classes') }">Classes</RouterLink>
           <RouterLink to="/promote" class="link" :class="{ active: is('/promote') }">Promote</RouterLink>
+          <RouterLink to="/agent" class="link" :class="{ active: is('/agent') }">AI 助手</RouterLink>
         </template>
 
         <template v-else>
@@ -17,6 +18,7 @@
           <RouterLink to="/classes" class="link" :class="{ active: is('/classes') }">我的班级</RouterLink>
           <RouterLink to="/practice" class="link" :class="{ active: is('/practice') }">章节练习</RouterLink>
           <RouterLink to="/verilog" class="link" :class="{ active: is('/verilog') }">Verilog 在线仿真</RouterLink>
+          <RouterLink to="/agent" class="link" :class="{ active: is('/agent') }">AI 助手</RouterLink>
         </template>
       </nav>
 

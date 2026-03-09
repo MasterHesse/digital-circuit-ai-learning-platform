@@ -10,6 +10,7 @@ import Practice from '../pages/Practice.vue'
 import OnlineVerilogEditorPage from '../pages/OnlineVerilogEditorPage.vue'
 import Classes from '../pages/Classes.vue'
 import ClassDetail from '../pages/ClassDetail.vue'
+import Agent from '../pages/Agent.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -29,6 +30,12 @@ const router = createRouter({
       path: '/practice',
       name: 'practice',
       component: Practice,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/agent',
+      name: 'agent',
+      component: Agent,
       meta: { requiresAuth: true },
     },
     {

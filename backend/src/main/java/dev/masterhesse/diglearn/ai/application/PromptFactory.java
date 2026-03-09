@@ -4,6 +4,7 @@ import dev.masterhesse.diglearn.ai.api.AiApiModels;
 import dev.masterhesse.diglearn.ai.domain.AiScene;
 import dev.masterhesse.diglearn.ai.domain.RetrievedChunk;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -38,21 +39,30 @@ public class PromptFactory {
     public String buildUserPrompt(
             AiApiModels.AiChatRequest request,
             String learningContext,
+            String conversationContext,
             List<RetrievedChunk> chunks
     ) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("\n")
-                .append(request.message())
+        sb.append("[当前问题]\n")
+                .append(request.message().trim())
                 .append("\n\n");
 
-        sb.append("\n")
-                .append(learningContext)
-                .append("\n\n");
+        if (StringUtils.hasText(learningContext)) {
+            sb.append("[当前用户画像]\n")
+                    .append(learningContext.trim())
+                    .append("\n\n");
+        }
 
-        sb.append("\n");
+        if (StringUtils.hasText(conversationContext)) {
+            sb.append("[当前会话历史]\n")
+                    .append(conversationContext.trim())
+                    .append("\n\n");
+        }
+
+        sb.append("[教学资料]\n");
         if (chunks == null || chunks.isEmpty()) {
-            sb.append("无\n");
+            sb.append("无\n\n");
         } else {
             for (int i = 0; i < chunks.size(); i++) {
                 RetrievedChunk c = chunks.get(i);
@@ -70,11 +80,14 @@ public class PromptFactory {
         }
 
         sb.append("""
-                
-                - 优先用给定资料回答
-                - 若资料不足请明确说明
-                - 输出尽量分点
-                - 最后补一个“下一步建议”
+                [回答要求]
+                1. 优先依据“教学资料”回答；
+                2. 如果“会话历史”与“当前问题”冲突，以当前问题为准；
+                3. 如果资料不足，请明确说明“当前资料不足”；
+                4. 只有当问题涉及学习建议、学习路径、推荐内容、讲解深度调整时，才参考“用户画像”；
+                5. 不要伪造用户学习记录；
+                6. 输出尽量分点；
+                7. 最后补一个“下一步建议”。
                 """);
 
         return sb.toString();

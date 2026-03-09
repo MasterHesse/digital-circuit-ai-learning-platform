@@ -4,6 +4,7 @@ import dev.masterhesse.diglearn.ai.domain.AiScene;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
+import java.time.Instant;
 import java.util.List;
 
 public final class AiApiModels {
@@ -20,12 +21,13 @@ public final class AiApiModels {
             AiScene scene,
             Boolean includeSources,
 
-            // 动态模型选择
-            String model,            // qwen-turbo / qwen-plus / qwen-flash
-            Boolean thinking,        // true / false
+            String model,
+            Boolean thinking,
             @Min(value = 1, message = "thinkingBudget must be >= 1")
-            Integer thinkingBudget,  // 可选
-            Boolean showReasoning    // 是否把 reasoning 返回给前端
+            Integer thinkingBudget,
+            Boolean showReasoning,
+
+            Boolean useProfileContext
     ) {
     }
 
@@ -47,7 +49,47 @@ public final class AiApiModels {
             List<AiSourceRef> sources,
             List<String> nextActions,
             boolean fallback,
-            String provider
+            String provider,
+            List<String> usedContexts
+    ) {
+    }
+
+    public record CreateConversationRequest(
+            String title,
+            AiScene scene
+    ) {
+    }
+
+    public record AiConversationSummary(
+            String conversationId,
+            String title,
+            AiScene scene,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+    }
+
+    public record AiConversationMessage(
+            String messageId,
+            String role,
+            String content,
+            String reasoning,
+            String model,
+            String provider,
+            boolean fallback,
+            List<AiSourceRef> sources,
+            List<String> usedContexts,
+            Instant createdAt
+    ) {
+    }
+
+    public record AiConversationDetail(
+            String conversationId,
+            String title,
+            AiScene scene,
+            Instant createdAt,
+            Instant updatedAt,
+            List<AiConversationMessage> messages
     ) {
     }
 
