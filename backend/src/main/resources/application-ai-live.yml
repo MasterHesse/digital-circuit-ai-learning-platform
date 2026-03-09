@@ -1,0 +1,55 @@
+spring:
+  ai:
+    model:
+      chat: openai
+      embedding: openai
+
+    retry:
+      max-attempts: 2
+      backoff:
+        initial-interval: 1s
+        multiplier: 2
+        max-interval: 5s
+
+    openai:
+      api-key: ${DASHSCOPE_API_KEY}
+
+      # 推荐这样写：让 Spring AI 自己再拼 /v1/chat/completions 和 /v1/embeddings
+      base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+
+      chat:
+        completions-path: /v1/chat/completions
+        options:
+          model: ${AI_DEFAULT_CHAT_MODEL:qwen-turbo}
+          temperature: 0.2
+
+      embedding:
+        embeddings-path: /v1/embeddings
+        options:
+          model: ${AI_EMBEDDING_MODEL:text-embedding-v4}
+          dimensions: ${AI_EMBEDDING_DIMENSIONS:1536}
+
+    vectorstore:
+      pgvector:
+        table-name: ai_vector_store
+        dimensions: ${AI_EMBEDDING_DIMENSIONS:1536}
+        distance-type: COSINE_DISTANCE
+        index-type: HNSW
+        initialize-schema: false
+        schema-validation: true
+
+app:
+  ai:
+    default-chat-model: ${AI_DEFAULT_CHAT_MODEL:qwen-turbo}
+    default-thinking: ${AI_DEFAULT_THINKING:false}
+    default-thinking-budget: ${AI_DEFAULT_THINKING_BUDGET:1024}
+
+    allowed-chat-models:
+      - qwen-turbo
+      - qwen-plus
+      - qwen-flash
+
+    reasoning-capable-models:
+      - qwen-turbo
+      - qwen-plus
+      - qwen-flash

@@ -89,7 +89,10 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource))
         .csrf(csrf -> csrf
             .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-            .csrfTokenRequestHandler(requestHandler) // 关键：不用默认 Xor handler
+            .csrfTokenRequestHandler(requestHandler)
+            .ignoringRequestMatchers("/api/ai/**")
+            .ignoringRequestMatchers("/api/admin/materials/**")
+            .ignoringRequestMatchers("/api/admin/ai/**")
         )
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/actuator/health").permitAll()
@@ -98,6 +101,9 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.GET, "/api/auth/csrf").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+            .requestMatchers("/api/ai/**").permitAll()
+            .requestMatchers("/api/admin/materials/**").permitAll()
+            .requestMatchers("/api/admin/ai/**").permitAll()
             .requestMatchers("/api/users/**").hasRole("ADMIN")
             .anyRequest().authenticated()
         )

@@ -1,0 +1,44 @@
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-stacktrace: always
+
+spring:
+  config:
+    activate:
+      on-profile: ai-live
+
+  ai:
+    model:
+      chat: openai
+      embedding: openai
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
+
+    vectorstore:
+      type: pgvector
+      pgvector:
+        initialize-schema: true
+        schema-validation: false
+        schema-name: public
+        table-name: ai_vector_store
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: ${DIGLEARN_AI_CHAT_MODEL:gpt-4o-mini}
+          temperature: 0.2
+      embedding:
+        options:
+          model: ${DIGLEARN_AI_EMBED_MODEL:text-embedding-3-small}
+
+diglearn:
+  ai:
+    mode: live
