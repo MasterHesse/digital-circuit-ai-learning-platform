@@ -4,8 +4,6 @@ server:
     include-message: always
     include-stacktrace: always
 
-debug: true
-
 logging:
   level:
     org.hibernate.SQL: DEBUG

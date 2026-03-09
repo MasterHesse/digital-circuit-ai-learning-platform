@@ -4,11 +4,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
-@ConditionalOnProperty(prefix = "diglearn.ai", name = "mode", havingValue = "stub", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "diglearn.ai", name = "mode", havingValue = "stub")
 public class StubLlmGateway implements LlmGateway {
 
     @Override
     public LlmAnswer chat(LlmPrompt prompt, LlmChatOptions options) {
+        LlmChatOptions safeOptions = options == null ? LlmChatOptions.defaults() : options;
+
         String content = """
                 [Stub AI]
                 当前仍处于骨架联调阶段，尚未调用真实大模型。
@@ -23,20 +25,23 @@ public class StubLlmGateway implements LlmGateway {
                 当前请求参数：
                 - model: %s
                 - thinking: %s
-                - thinkingBudget: %s
+                - thinkingEffort: %s
+                - maxTokens: %s
                 
-                下一步可以切换到 live 模式来接入真实 DashScope / Spring AI。
+                下一步可以切换到 live 模式来接入真实模型。
                 """.formatted(
-                options.model(),
-                options.thinking(),
-                options.thinkingBudget()
+                safeOptions.model(),
+                safeOptions.thinking(),
+                safeOptions.resolvedThinkingEffort(),
+                safeOptions.maxTokens()
         );
 
         return new LlmAnswer(
                 content,
                 null,
                 true,
-                "stub"
+                "stub",
+                safeOptions.model()
         );
     }
 }

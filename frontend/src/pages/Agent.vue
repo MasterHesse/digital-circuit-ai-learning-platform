@@ -13,7 +13,7 @@
         <div class="sep" />
 
         <div class="brand-title">DigLearn AI 助教</div>
-        <div class="brand-subtitle">支持多轮对话、学习画像、会话保存</div>
+        <div class="brand-subtitle">支持多轮对话、学习画像、会话保存、仿真关卡讲解与推荐</div>
       </div>
 
       <button class="btn-submit full" type="button" :disabled="loading" @click="createConversation">
@@ -50,6 +50,7 @@
               </div>
               <div class="conversation-meta">
                 <span class="mono">{{ shortId(item.conversationId) }}</span>
+                <span>{{ sceneLabel(item.scene) }}</span>
                 <span>{{ formatTime(item.updatedAt) }}</span>
               </div>
             </button>
@@ -105,9 +106,9 @@
       <main ref="messagePane" class="message-pane">
         <div v-if="!messages.length" class="empty-state">
           <div class="empty-badge">AI 助教已就绪</div>
-          <div class="empty-title">今天想问点什么？</div>
+          <div class="empty-title">{{ emptyTitle }}</div>
           <div class="empty-desc">
-            你可以提问概念、请求题目讲解、查看推荐原因，或者让助教根据你的学习画像给出建议。
+            {{ emptyDesc }}
           </div>
 
           <div class="empty-actions">
@@ -304,6 +305,7 @@
             <div class="toolbar-tags">
               <span class="toolbar-tag">场景：{{ sceneLabel(scene) }}</span>
               <span class="toolbar-tag">模型：{{ model }}</span>
+              <span v-if="isSimScene" class="toolbar-tag">仿真场景</span>
               <span v-if="useProfileContext" class="toolbar-tag">画像增强</span>
               <span v-if="includeSources" class="toolbar-tag">资料来源</span>
               <span v-if="thinking" class="toolbar-tag">思考模式</span>
@@ -341,7 +343,12 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ApiError, api } from '../lib/api'
 
-type Scene = 'GENERAL_QA' | 'QUESTION_EXPLAIN' | 'RECOMMENDATION_EXPLAIN'
+type Scene =
+  | 'GENERAL_QA'
+  | 'QUESTION_EXPLAIN'
+  | 'RECOMMENDATION_EXPLAIN'
+  | 'SIM_LEVEL_RECOMMEND'
+  | 'SIM_LEVEL_EXPLAIN'
 
 type ChatSource = {
   id: string
@@ -374,7 +381,7 @@ type ConversationSummary = {
 
 type ConversationMessage = {
   messageId: string
-  role: 'user' | 'assistant'
+  role: string
   content: string
   reasoning?: string | null
   model?: string | null
@@ -440,12 +447,8 @@ const sceneOptions: Array<{ value: Scene; label: string }> = [
   { value: 'GENERAL_QA', label: '通用问答' },
   { value: 'QUESTION_EXPLAIN', label: '题目讲解' },
   { value: 'RECOMMENDATION_EXPLAIN', label: '推荐解读' },
-]
-
-const quickPrompts = [
-  '帮我根据当前学习情况制定今天的学习计划。',
-  '解释一下组合逻辑和时序逻辑的核心区别。',
-  '我有一道题做错了，请帮我讲解思路，不要直接只给答案。',
+  { value: 'SIM_LEVEL_EXPLAIN', label: '仿真关卡讲解' },
+  { value: 'SIM_LEVEL_RECOMMEND', label: '仿真关卡推荐' },
 ]
 
 const currentConversation = computed(() =>
@@ -456,6 +459,78 @@ const currentConversationTitle = computed(() => {
   if (currentConversation.value?.title) return currentConversation.value.title
   if (activeConversationId.value) return '当前会话'
   return '新对话'
+})
+
+const isSimScene = computed(
+  () => scene.value === 'SIM_LEVEL_EXPLAIN' || scene.value === 'SIM_LEVEL_RECOMMEND'
+)
+
+const quickPrompts = computed(() => {
+  switch (scene.value) {
+    case 'SIM_LEVEL_EXPLAIN':
+      return [
+        '请解释这一关的题意和输入输出关系。',
+        '请分析这关需要哪些关键元件，以及它们分别起什么作用。',
+        '请给我这关的解题思路和调试建议，不要直接给完整答案。',
+      ]
+    case 'SIM_LEVEL_RECOMMEND':
+      return [
+        '根据我目前进度推荐 2-3 个下一步仿真关卡。',
+        '我哪些知识点练得少，应该优先补哪里？',
+        '如果我刚学完基本逻辑门，下一步适合练什么仿真关卡？',
+      ]
+    case 'QUESTION_EXPLAIN':
+      return [
+        '我有一道题做错了，请帮我讲解思路，不要直接只给答案。',
+        '请帮我分析这道题考查了哪些知识点和易错点。',
+        '请给我一个更容易理解的解题步骤说明。',
+      ]
+    case 'RECOMMENDATION_EXPLAIN':
+      return [
+        '帮我根据当前学习情况制定今天的学习计划。',
+        '为什么系统推荐我先学这个内容？',
+        '请给我一个循序渐进的复习顺序。',
+      ]
+    case 'GENERAL_QA':
+    default:
+      return [
+        '帮我根据当前学习情况制定今天的学习计划。',
+        '解释一下组合逻辑和时序逻辑的核心区别。',
+        '我有一道题做错了，请帮我讲解思路，不要直接只给答案。',
+      ]
+  }
+})
+
+const emptyTitle = computed(() => {
+  switch (scene.value) {
+    case 'SIM_LEVEL_EXPLAIN':
+      return '想讲解哪一关仿真题？'
+    case 'SIM_LEVEL_RECOMMEND':
+      return '想看看下一步练哪一关？'
+    case 'QUESTION_EXPLAIN':
+      return '把题目交给我来拆解'
+    case 'RECOMMENDATION_EXPLAIN':
+      return '让我帮你解释推荐路径'
+    case 'GENERAL_QA':
+    default:
+      return '今天想问点什么？'
+  }
+})
+
+const emptyDesc = computed(() => {
+  switch (scene.value) {
+    case 'SIM_LEVEL_EXPLAIN':
+      return '你可以输入关卡编码，并让助教解释题意、输入输出关系、关键元件作用和调试思路。'
+    case 'SIM_LEVEL_RECOMMEND':
+      return '你可以让助教结合你的学习画像和仿真进度，推荐更适合当前阶段的下一步关卡。'
+    case 'QUESTION_EXPLAIN':
+      return '你可以请求题目讲解、拆解思路、分析易错点，或要求助教只给提示不给完整答案。'
+    case 'RECOMMENDATION_EXPLAIN':
+      return '你可以查看推荐原因、学习顺序和下一步计划，让助教解释为什么这样安排。'
+    case 'GENERAL_QA':
+    default:
+      return '你可以提问概念、请求题目讲解、查看推荐原因，或者让助教根据你的学习画像给出建议。'
+  }
 })
 
 const canSend = computed(() => !loading.value && draft.value.trim().length > 0)
@@ -482,7 +557,7 @@ function roleLabel(role: 'user' | 'assistant') {
   return role === 'user' ? '你' : '助教'
 }
 
-function sceneLabel(v: Scene) {
+function sceneLabel(v: Scene | string) {
   return sceneOptions.find((x) => x.value === v)?.label || v
 }
 
@@ -493,6 +568,7 @@ function contextLabel(code: string) {
     PROFILE_PRACTICE: '练习画像',
     HISTORY: '历史对话',
     MATERIAL: '教学资料',
+    SIM_PRACTICE: '仿真画像',
   }
   return m[code] || code
 }
@@ -519,42 +595,127 @@ function escapeHtml(input: string) {
     .replaceAll("'", '&#39;')
 }
 
+function formatInline(input: string) {
+  return input
+    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+}
+
 function toHtml(input: string) {
   if (!input) return ''
-  let text = input.replace(/\r\n/g, '\n')
 
+  let text = input.replace(/\r\n/g, '\n').trim()
   const blockStore: string[] = []
 
   text = text.replace(/```([\s\S]*?)```/g, (_, code: string) => {
     const token = `@@CODE_BLOCK_${blockStore.length}@@`
     blockStore.push(`<pre><code>${escapeHtml(code.trim())}</code></pre>`)
-    return token
+    return `\n${token}\n`
   })
 
-  text = escapeHtml(text)
-    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  text = formatInline(escapeHtml(text))
 
-  const paragraphs = text
-    .split(/\n{2,}/)
-    .map((part) => `<p>${part.replace(/\n/g, '<br />')}</p>`)
-    .join('')
+  const lines = text.split('\n')
+  const htmlParts: string[] = []
 
-  let html = paragraphs
+  let paragraphLines: string[] = []
+  let listType: '' | 'ul' | 'ol' = ''
+
+  const flushParagraph = () => {
+    if (!paragraphLines.length) return
+    htmlParts.push(`<p>${paragraphLines.join('<br />')}</p>`)
+    paragraphLines = []
+  }
+
+  const closeList = () => {
+    if (!listType) return
+    htmlParts.push(`</${listType}>`)
+    listType = ''
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd()
+    const trimmed = line.trim()
+
+    if (!trimmed) {
+      flushParagraph()
+      closeList()
+      continue
+    }
+
+    if (/^@@CODE_BLOCK_\d+@@$/.test(trimmed)) {
+      flushParagraph()
+      closeList()
+      htmlParts.push(trimmed)
+      continue
+    }
+
+    const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)$/)
+    if (headingMatch) {
+      flushParagraph()
+      closeList()
+      const level = Math.min(headingMatch[1].length, 3)
+      htmlParts.push(`<h${level}>${headingMatch[2]}</h${level}>`)
+      continue
+    }
+
+    const quoteMatch = trimmed.match(/^&gt;\s?(.+)$/)
+    if (quoteMatch) {
+      flushParagraph()
+      closeList()
+      htmlParts.push(`<blockquote><p>${quoteMatch[1]}</p></blockquote>`)
+      continue
+    }
+
+    const unorderedMatch = trimmed.match(/^[-*]\s+(.+)$/)
+    if (unorderedMatch) {
+      flushParagraph()
+      if (listType !== 'ul') {
+        closeList()
+        listType = 'ul'
+        htmlParts.push('<ul>')
+      }
+      htmlParts.push(`<li>${unorderedMatch[1]}</li>`)
+      continue
+    }
+
+    const orderedMatch = trimmed.match(/^\d+\.\s+(.+)$/)
+    if (orderedMatch) {
+      flushParagraph()
+      if (listType !== 'ol') {
+        closeList()
+        listType = 'ol'
+        htmlParts.push('<ol>')
+      }
+      htmlParts.push(`<li>${orderedMatch[1]}</li>`)
+      continue
+    }
+
+    closeList()
+    paragraphLines.push(trimmed)
+  }
+
+  flushParagraph()
+  closeList()
+
+  let html = htmlParts.join('')
+
   for (let i = 0; i < blockStore.length; i++) {
     const token = `@@CODE_BLOCK_${i}@@`
-    html = html.replace(`<p>${token}</p>`, blockStore[i]).replace(token, blockStore[i])
+    html = html.split(token).join(blockStore[i])
   }
 
   return html
 }
 
 function mapConversationMessage(msg: ConversationMessage, conversationId: string): UiMessage {
+  const role = msg.role?.toLowerCase() === 'user' ? 'user' : 'assistant'
+
   return {
     id: msg.messageId,
-    role: msg.role?.toLowerCase() === 'user' ? 'user' : 'assistant',
+    role,
     content: msg.content || '',
-    html: msg.role === 'assistant' ? toHtml(msg.content || '') : undefined,
+    html: role === 'assistant' ? toHtml(msg.content || '') : undefined,
     reasoning: msg.reasoning ?? null,
     model: msg.model ?? null,
     provider: msg.provider ?? null,
@@ -564,6 +725,12 @@ function mapConversationMessage(msg: ConversationMessage, conversationId: string
     conversationId,
     createdAt: msg.createdAt || new Date().toISOString(),
   }
+}
+
+function syncLastAssistantMeta(list: UiMessage[]) {
+  const lastAssistant = [...list].reverse().find((item) => item.role === 'assistant')
+  lastProvider.value = lastAssistant?.provider || ''
+  lastModel.value = lastAssistant?.model || ''
 }
 
 async function scrollToBottom() {
@@ -600,6 +767,8 @@ async function loadConversations(autoOpenFirst = false) {
       if (!exists) {
         activeConversationId.value = ''
         messages.value = []
+        lastProvider.value = ''
+        lastModel.value = ''
       }
     }
 
@@ -641,6 +810,7 @@ async function openConversation(conversationId: string) {
       ? detail.messages.map((msg) => mapConversationMessage(msg, detail.conversationId))
       : []
 
+    syncLastAssistantMeta(messages.value)
     await scrollToBottom()
     await focusInput()
   } catch (err) {
@@ -703,7 +873,7 @@ async function submit(prefilled?: string) {
 
   loading.value = true
   try {
-    const res = await api.post<ChatResponse>('/api/ai/chat', {
+    const payload: Record<string, unknown> = {
       conversationId: activeConversationId.value || undefined,
       message: raw,
       scene: scene.value,
@@ -712,7 +882,9 @@ async function submit(prefilled?: string) {
       thinking: thinking.value,
       showReasoning: showReasoning.value,
       useProfileContext: useProfileContext.value,
-    })
+    }
+
+    const res = await api.post<ChatResponse>('/api/ai/chat', payload)
 
     activeConversationId.value = res.conversationId || activeConversationId.value
     lastProvider.value = res.provider || ''
@@ -1235,6 +1407,58 @@ onBeforeUnmount(() => {
 
 .assistant-body :deep(p:last-child) {
   margin-bottom: 0;
+}
+
+.assistant-body :deep(h1),
+.assistant-body :deep(h2),
+.assistant-body :deep(h3) {
+  margin: 14px 0 10px;
+  line-height: 1.4;
+  font-weight: 800;
+  color: rgba(245, 247, 255, 0.98);
+}
+
+.assistant-body :deep(h1) {
+  font-size: 20px;
+}
+
+.assistant-body :deep(h2) {
+  font-size: 18px;
+}
+
+.assistant-body :deep(h3) {
+  font-size: 16px;
+}
+
+.assistant-body :deep(ul),
+.assistant-body :deep(ol) {
+  margin: 0 0 12px 20px;
+  padding-left: 8px;
+}
+
+.assistant-body :deep(ul) {
+  list-style: disc;
+}
+
+.assistant-body :deep(ol) {
+  list-style: decimal;
+}
+
+.assistant-body :deep(li) {
+  margin: 6px 0;
+}
+
+.assistant-body :deep(blockquote) {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border-left: 4px solid rgba(100, 108, 255, 0.4);
+  border-radius: 10px;
+  background: rgba(100, 108, 255, 0.08);
+  color: rgba(230, 235, 255, 0.92);
+}
+
+.assistant-body :deep(blockquote p) {
+  margin: 0;
 }
 
 .assistant-body :deep(pre) {

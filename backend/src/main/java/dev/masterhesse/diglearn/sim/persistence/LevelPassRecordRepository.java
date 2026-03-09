@@ -1,15 +1,20 @@
 package dev.masterhesse.diglearn.sim.persistence;
 
-import org.springframework.data.jpa.repository.*;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface LevelPassRecordRepository extends JpaRepository<LevelPassRecordEntity, Long> {
 
     Optional<LevelPassRecordEntity> findByUserIdAndLevelCode(String userId, String levelCode);
 
-    @Modifying
+    List<LevelPassRecordEntity> findAllByUserIdOrderByLastPassedAtDesc(String userId);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = """
         INSERT INTO level_pass_records (user_id, level_code, first_passed_at, last_passed_at, pass_count)
         VALUES (:userId, :levelCode, now(), now(), 1)

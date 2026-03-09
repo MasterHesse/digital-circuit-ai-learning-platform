@@ -6,7 +6,10 @@ import dev.masterhesse.diglearn.ai.domain.AiScene;
 import dev.masterhesse.diglearn.ai.domain.RetrievedChunk;
 import dev.masterhesse.diglearn.ai.persistence.AiConversationEntity;
 import dev.masterhesse.diglearn.ai.persistence.AiConversationMessageEntity;
+import dev.masterhesse.diglearn.ai.provider.LlmAnswer;
+import dev.masterhesse.diglearn.ai.provider.LlmChatOptions;
 import dev.masterhesse.diglearn.ai.provider.LlmGateway;
+import dev.masterhesse.diglearn.ai.provider.LlmPrompt;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -46,7 +49,7 @@ public class AiChatService {
 
         String conversationContext = buildConversationContext(history);
 
-        LlmGateway.LlmPrompt prompt = new LlmGateway.LlmPrompt(
+        LlmPrompt prompt = new LlmPrompt(
                 promptFactory.buildSystemPrompt(scene),
                 promptFactory.buildUserPrompt(
                         request,
@@ -58,15 +61,16 @@ public class AiChatService {
 
         String model = resolveModel(request.model());
         boolean thinking = resolveThinking(model, request.thinking());
-        Integer thinkingBudget = resolveThinkingBudget(thinking, request.thinkingBudget());
+        Integer maxTokens = resolveThinkingBudget(thinking, request.thinkingBudget());
 
-        LlmGateway.LlmChatOptions options = new LlmGateway.LlmChatOptions(
+        LlmChatOptions options = new LlmChatOptions(
                 model,
                 thinking,
-                thinkingBudget
+                null,
+                maxTokens
         );
 
-        LlmGateway.LlmAnswer answer = llmGateway.chat(prompt, options);
+        LlmAnswer answer = llmGateway.chat(prompt, options);
 
         List<AiApiModels.AiSourceRef> allSources = chunks.stream().map(this::toSourceRef).toList();
         List<AiApiModels.AiSourceRef> responseSources = Boolean.FALSE.equals(request.includeSources())
@@ -151,6 +155,10 @@ public class AiChatService {
         return thinking;
     }
 
+    /**
+     * 兼容旧 API 字段命名：request.thinkingBudget()
+     * 内部统一映射为 LlmChatOptions.maxTokens。
+     */
     private Integer resolveThinkingBudget(boolean thinking, Integer requestedThinkingBudget) {
         if (!thinking) {
             return null;

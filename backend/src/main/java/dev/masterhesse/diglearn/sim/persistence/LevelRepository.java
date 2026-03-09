@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 public interface LevelRepository extends JpaRepository<LevelEntity, String> {
 
@@ -15,4 +16,6 @@ public interface LevelRepository extends JpaRepository<LevelEntity, String> {
     @EntityGraph(attributePaths = {"allowedComponents", "kpIds", "testCases"})
     @Query("select l from LevelEntity l where l.code = :code")
     Optional<LevelEntity> findDetailByCode(@Param("code") String code);
+
+    List<LevelEntity> findAllByCodeIn(Collection<String> codes);
 }
